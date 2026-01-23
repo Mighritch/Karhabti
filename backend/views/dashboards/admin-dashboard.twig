@@ -1,0 +1,246 @@
+{% extends "layout.twig" %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Tableau de Bord Administrateur</h1>
+    <p class="subtitle">Bienvenue, {{ user.prenom }} {{ user.nom }}</p>
+  </div>
+
+  <div class="dashboard-content">
+    <div class="dashboard-grid">
+      <!-- Profil Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Informations Administrateur</h2>
+        </div>
+        <div class="card-body">
+          <p><strong>Nom:</strong> {{ user.nom }} {{ user.prenom }}</p>
+          <p><strong>Email:</strong> {{ user.email }}</p>
+          <p><strong>Téléphone:</strong> {{ user.telephone }}</p>
+          <p><strong>Rôle:</strong> <span class="badge badge-danger">{{ user.role }}</span></p>
+        </div>
+      </div>
+
+      <!-- Gestion des utilisateurs Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Gestion des Utilisateurs</h2>
+        </div>
+        <div class="card-body">
+          <p>Nombre total: <strong>0</strong></p>
+        </div>
+        <div class="card-footer">
+          <a href="/admin/users" class="btn btn-primary">Gérer les utilisateurs</a>
+        </div>
+      </div>
+
+      <!-- Gestion des agents Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Gestion des Agents</h2>
+        </div>
+        <div class="card-body">
+          <p>Nombre total: <strong>0</strong></p>
+        </div>
+        <div class="card-footer">
+          <a href="/admin/agents" class="btn btn-primary">Gérer les agents</a>
+        </div>
+      </div>
+
+      <!-- Gestion des véhicules Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Gestion des Véhicules</h2>
+        </div>
+        <div class="card-body">
+          <p>Nombre total: <strong>0</strong></p>
+        </div>
+        <div class="card-footer">
+          <a href="/admin/vehicles" class="btn btn-primary">Gérer les véhicules</a>
+        </div>
+      </div>
+
+      <!-- Gestion des agences Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Gestion des Agences</h2>
+        </div>
+        <div class="card-body">
+          <p>Nombre total: <strong>0</strong></p>
+        </div>
+        <div class="card-footer">
+          <a href="/admin/agencies" class="btn btn-primary">Gérer les agences</a>
+        </div>
+      </div>
+
+      <!-- Statistiques générales Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Statistiques Générales</h2>
+        </div>
+        <div class="card-body">
+          <p>Réservations totales: <strong>0</strong></p>
+          <p>Revenu total: <strong>0 DT</strong></p>
+          <p>Taux d'occupation: <strong>0%</strong></p>
+        </div>
+      </div>
+
+      <!-- Actions d'administration Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Actions d'Administration</h2>
+        </div>
+        <div class="card-body">
+          <ul class="quick-actions">
+            <li><a href="/admin/users">Gérer les utilisateurs</a></li>
+            <li><a href="/admin/agents">Gérer les agents</a></li>
+            <li><a href="/admin/vehicles">Gérer les véhicules</a></li>
+            <li><a href="/admin/agencies">Gérer les agences</a></li>
+            <li><a href="/admin/reports">Voir les rapports</a></li>
+            <li><a href="/admin/settings">Paramètres système</a></li>
+            <li><a href="/api/users/logout" class="text-danger">Déconnexion</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Logs et audit Card -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h2>Logs et Audit</h2>
+        </div>
+        <div class="card-body">
+          <p>Derniers logs: <strong>0</strong></p>
+        </div>
+        <div class="card-footer">
+          <a href="/admin/logs" class="btn btn-secondary">Consulter les logs</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dashboard-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .dashboard-header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid #dc3545;
+    padding-bottom: 20px;
+  }
+
+  .dashboard-header h1 {
+    color: #333;
+    margin: 0;
+  }
+
+  .dashboard-header .subtitle {
+    color: #666;
+    margin: 10px 0 0 0;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .dashboard-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-header {
+    background: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .card-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+  }
+
+  .card-body {
+    padding: 15px;
+  }
+
+  .card-body p {
+    margin: 10px 0;
+  }
+
+  .card-footer {
+    background: #f8f9fa;
+    padding: 15px;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background: #007bff;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #0056b3;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #545b62;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+  }
+
+  .badge-danger {
+    background: #dc3545;
+    color: white;
+  }
+
+  .quick-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .quick-actions li {
+    padding: 8px 0;
+  }
+
+  .quick-actions a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  .quick-actions a:hover {
+    text-decoration: underline;
+  }
+
+  .quick-actions .text-danger {
+    color: #dc3545;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,226 @@
+/* ==========================================================================
+   App.css — Style moderne 2025–2026 — Glassmorphism + Neon subtle
+   ========================================================================== */
+
+:root {
+  --bg-primary: #0d001a;
+  --bg-gradient: linear-gradient(135deg, #0f001a 0%, #1a0033 100%);
+  --glass-bg: rgba(40, 40, 80, 0.18);
+  --glass-border: rgba(100, 80, 255, 0.25);
+  --accent: #7b5eff;
+  --accent-dark: #5a3ee6;
+  --text-primary: #f0efff;
+  --text-secondary: #c3c0ff;
+  --error: #ff6b8f;
+  --success: #6bffb3;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 80px; /* ← hauteur header – à ajuster selon ton Header */
+}
+
+/* ─── Glassmorphism Card ─────────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(100, 80, 255, 0.12) inset;
+  padding: 3rem 2.5rem;
+  width: 100%;
+  max-width: 480px;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5),
+              0 0 0 2px rgba(123, 94, 255, 0.25) inset;
+}
+
+/* ─── Auth Page Wrapper (plein écran centré) ────────────────── */
+.auth-page-wrapper {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--bg-gradient);
+}
+
+/* ─── Form elements ──────────────────────────────────────────── */
+h2 {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 2.2rem;
+  background: linear-gradient(90deg, #c3c0ff, #7b5eff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.form-group {
+  margin-bottom: 1.6rem;
+  position: relative;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 1rem 1.3rem;
+  border: 1px solid rgba(123, 94, 255, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 1.05rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(123, 94, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.form-group input::placeholder {
+  color: rgba(192, 192, 255, 0.5);
+}
+
+/* ─── Password toggle ────────────────────────────────────────── */
+.password-group {
+  position: relative;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 3.8rem !important;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.toggle-password:hover {
+  color: var(--accent);
+}
+
+/* ─── Error messages ─────────────────────────────────────────── */
+.error,
+.error-message {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin-top: 0.45rem;
+  display: block;
+}
+
+.error-message {
+  background: rgba(255, 107, 143, 0.12);
+  border: 1px solid rgba(255, 107, 143, 0.3);
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 1.8rem;
+}
+
+/* ─── Submit Button ──────────────────────────────────────────── */
+button[type="submit"] {
+  width: 100%;
+  padding: 1.15rem;
+  margin-top: 1.4rem;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.35s ease;
+  box-shadow: 0 10px 30px rgba(123, 94, 255, 0.35);
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(123, 94, 255, 0.5);
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─── Link secondary ─────────────────────────────────────────── */
+.auth-link {
+  text-align: center;
+  margin-top: 1.8rem;
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+}
+
+.auth-link a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link a:hover {
+  text-decoration: underline;
+  color: #9b85ff;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .glass-card {
+    padding: 2.2rem 1.6rem;
+    margin: 1rem;
+    border-radius: 20px;
+  }
+}
