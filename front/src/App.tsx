@@ -5,7 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Header from './components/Header';
-import Profile from './components/Profile/Profile'; // ← nouveau composant Profil
+import Profile from './components/Profile/Profile';
+import Agences from './components/Agence/Agences';
+import MesAgences from './components/Agence/MesAgences'; // Chemin à adapter
 
 import './App.css';
 
@@ -30,6 +32,10 @@ function App() {
 
               {/* Routes publiques */}
               <Route path="/" element={<div className="home-placeholder">Page d'accueil publique</div>} />
+
+              <Route path="/agences" element={<Agences />} />
+
+              <Route path="/mes-agences" element={<MesAgences />} />
 
               {/* Catch-all */}
               <Route path="*" element={<div className="not-found">404 — Page non trouvée</div>} />

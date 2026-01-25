@@ -1,201 +1,404 @@
 .main-header {
-  background-color: #1a1a1a;
-  border-bottom: 1px solid #333;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  border-bottom: 2px solid rgba(100, 108, 255, 0.2);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   width: 100%;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .header-container {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 1.2rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  position: relative;
+  transition: all 0.3s ease;
+  z-index: 1100;
 }
 
 .logo h1 {
   margin: 0;
-  font-size: 1.9rem;
-  color: #646cff;
-  font-weight: 700;
+  font-size: 2.2rem;
+  background: linear-gradient(90deg, #646cff, #8a2be2, #646cff);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
   letter-spacing: -0.5px;
+  position: relative;
+  animation: gradient-shift 4s ease infinite;
 }
 
-.logo:hover {
-  opacity: 0.92;
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.logo::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #646cff, #8a2be2);
+  transition: width 0.4s ease;
+  border-radius: 2px;
+}
+
+.logo:hover::after {
+  width: 100%;
+}
+
+.logo:hover h1 {
+  animation-play-state: paused;
+  text-shadow: 0 0 20px rgba(100, 108, 255, 0.4);
 }
 
 .header-nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .auth-links {
   display: flex;
-  gap: 2rem;  /* Espace augmenté : 2rem (32px) entre Connexion et S'inscrire */
+  gap: 1.8rem;
 }
 
 .nav-link {
-  color: #ddd;
+  color: #e0e0ff;
   text-decoration: none;
-  font-weight: 500;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  transition: all 0.25s ease;
-  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1rem;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(100, 108, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.nav-link:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .nav-link:hover {
   color: white;
-  background-color: rgba(100, 108, 255, 0.15);
-  transform: translateY(-1px);
+  background-color: rgba(100, 108, 255, 0.2);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(100, 108, 255, 0.25);
+  border-color: rgba(100, 108, 255, 0.4);
 }
 
 .login-link {
   color: #646cff;
-  border: 1px solid rgba(100, 108, 255, 0.3);
+  background: rgba(100, 108, 255, 0.1);
+  border: 2px solid rgba(100, 108, 255, 0.4);
 }
 
 .login-link:hover {
-  background-color: rgba(100, 108, 255, 0.25);
-  color: #535bf2;
-  border-color: #646cff;
+  background: rgba(100, 108, 255, 0.25);
+  color: #a3a8ff;
+  box-shadow: 0 8px 25px rgba(100, 108, 255, 0.35);
 }
 
 .register-link {
-  background-color: #646cff;
+  background: linear-gradient(135deg, #646cff 0%, #8a2be2 100%);
   color: white !important;
-  border: 1px solid #646cff;
-  font-weight: 600;
+  border: 2px solid transparent;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-link::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.register-link:hover::after {
+  left: 100%;
 }
 
 .register-link:hover {
-  background-color: #535bf2;
-  color: white !important;
-  border-color: #535bf2;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #535bf2 0%, #7a1bc9 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(100, 108, 255, 0.4);
 }
 
 /* ── NOUVELLE SECTION UTILISATEUR ── */
 .user-section {
   display: flex;
   align-items: center;
-  gap: 1.2rem;          /* peut être réduit à 1rem si trop espacé */
-  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.8rem 1.5rem;
+  background: rgba(30, 30, 40, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
 }
 
 .user-name {
-  color: #aaa;
+  color: #b0b4ff;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  padding: 0.5rem 0;
+  gap: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: rgba(100, 108, 255, 0.1);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.user-name svg {
+  color: #646cff;
+  font-size: 1.2rem;
 }
 
 .logout-btn {
   background: transparent;
-  border: 1px solid #646cff;
-  color: #646cff;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  border: 2px solid #646cff;
+  color: #a3a8ff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.25s ease;
-  font-size: 0.95rem;
-  font-weight: 500;
+  gap: 0.8rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1rem;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+.logout-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(100, 108, 255, 0.1), rgba(138, 43, 226, 0.1));
+  z-index: -1;
+  border-radius: 10px;
 }
 
 .logout-btn:hover {
-  background: #646cff;
+  background: linear-gradient(135deg, #646cff 0%, #8a2be2 100%);
   color: white;
-  border-color: #646cff;
-  transform: translateY(-1px);
+  border-color: transparent;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(100, 108, 255, 0.35);
 }
 
 /* Styles pour le lien vers le profil */
 .profile-link {
-  color: #a0a0ff;
-  border: 1px solid rgba(160, 160, 255, 0.3);
-  background: rgba(100, 80, 255, 0.08);
-  padding: 0.6rem 1.3rem;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.25s ease;
+  color: #b0b4ff;
+  border: 2px solid rgba(160, 160, 255, 0.4);
+  background: rgba(100, 80, 255, 0.15);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  text-decoration: none;          /* ajouté pour cohérence */
+  text-decoration: none;
+  gap: 0.8rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .profile-link:hover {
   color: white;
-  background: rgba(100, 80, 255, 0.25);
+  background: rgba(100, 80, 255, 0.3);
   border-color: #a0a0ff;
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(100, 108, 255, 0.3);
 }
 
 .profile-link.active {
-  background: rgba(100, 80, 255, 0.35);
+  background: linear-gradient(135deg, rgba(100, 80, 255, 0.4), rgba(138, 43, 226, 0.4));
   border-color: #7b5eff;
   color: white;
+  box-shadow: 0 0 20px rgba(100, 80, 255, 0.4);
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  .header-container {
-    padding: 0.9rem 1rem;
-    flex-direction: column;
-    gap: 1rem;
+/* Animation pour les liens actifs */
+.nav-link.active {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(100, 108, 255, 0.3);
   }
-  
+  50% {
+    box-shadow: 0 0 20px rgba(100, 108, 255, 0.6);
+  }
+}
+
+/* ── MENU HAMBURGER - visible uniquement sur petits écrans ── */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #646cff;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1100;
+}
+
+.menu-toggle svg {
+  filter: drop-shadow(0 0 6px rgba(100, 108, 255, 0.6));
+}
+
+/* Quand le menu est ouvert sur mobile */
+.header-nav {
+  transition: all 0.4s ease;
+}
+
+/* ── MOBILE / TABLETTE ── */
+@media (max-width: 900px) {
+  .menu-toggle {
+    display: block;
+  }
+
   .header-nav {
-    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+    gap: 1rem;
+    border-top: 1px solid rgba(100, 108, 255, 0.25);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    transform: translateY(-20px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
-  
+
+  .header-nav.open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .user-section,
   .auth-links {
-    gap: 1.5rem;
-    flex-direction: row;
-    justify-content: center;
+    flex-direction: column;
     width: 100%;
+    gap: 1rem;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
   }
-  
-  .user-section {
-    flex-direction: row;
-    gap: 0.9rem;           /* ← ajusté ici */
-    width: 100%;
+
+  .user-name {
     justify-content: center;
+    background: rgba(100, 108, 255, 0.12);
+    padding: 1rem;
+    border-radius: 12px;
   }
-  
+
   .nav-link,
   .logout-btn,
-  .profile-link {
-    padding: 0.55rem 1.1rem;
-    font-size: 0.92rem;
+  .profile-link,
+  .agence-link {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+  }
+
+  .header-container {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* ── RESPONSIVE (autres tailles) ── */
+@media (max-width: 1024px) {
+  .header-container {
+    padding: 1rem 2rem;
+  }
+  
+  .logo h1 {
+    font-size: 1.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 1rem;
+  }
+  
+  .logo h1 {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 0.8rem;
   }
   
   .logo h1 {
     font-size: 1.6rem;
   }
-}
-
-@media (max-width: 480px) {
-  .auth-links {
-    flex-direction: column;
-    gap: 0.8rem;
+  
+  .nav-link,
+  .logout-btn,
+  .profile-link {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
   }
   
   .user-section {
-    flex-direction: column;
-    gap: 0.8rem;
-    text-align: center;
+    padding: 1rem;
   }
 }

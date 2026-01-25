@@ -1,0 +1,28 @@
+/* Bouton commun aux deux pages */
+.btn-create {
+  padding: 0.9rem 1.8rem;
+  background: linear-gradient(135deg, #646cff, #7b5eff);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  transition: all 0.25s ease;
+}
+
+.btn-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(100, 108, 255, 0.4);
+}
+
+/* Grille commune */
+.agences-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.8rem;
+  margin-top: 2rem;
+}

@@ -30,6 +30,7 @@ export interface RegisterData {
 // ────────────────────────────────────────────────
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   // Chargement automatique de l'utilisateur au montage (si token présent)
@@ -57,11 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const res = await api.get('/users/me');
         setUser(res.data.user);
+        setToken(token);
       } catch (err) {
         console.error('Erreur lors du chargement utilisateur :', err);
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
+        setToken(null);
       } finally {
         setLoading(false);
       }
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('token', token);
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setToken(token);
       setUser(user);
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Erreur de connexion');
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('token', token);
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setToken(token);
       setUser(user);
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Erreur lors de l’inscription');
@@ -103,12 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
+    setToken(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        token,
         loading,
         login,
         register: registerUser,
