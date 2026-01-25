@@ -1,16 +1,16 @@
 /* ==========================================================================
-   App.css — Style moderne 2025–2026 — Glassmorphism + Neon subtle
+   App.css — Style moderne avec image de fond
    ========================================================================== */
 
 :root {
   --bg-primary: #0d001a;
   --bg-gradient: linear-gradient(135deg, #0f001a 0%, #1a0033 100%);
-  --glass-bg: rgba(40, 40, 80, 0.18);
-  --glass-border: rgba(100, 80, 255, 0.25);
+  --glass-bg: rgba(30, 30, 60, 0.65); /* Plus opaque pour lisibilité */
+  --glass-border: rgba(100, 80, 255, 0.35);
   --accent: #7b5eff;
   --accent-dark: #5a3ee6;
-  --text-primary: #f0efff;
-  --text-secondary: #c3c0ff;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0ff;
   --error: #ff6b8f;
   --success: #6bffb3;
 }
@@ -21,66 +21,165 @@
   box-sizing: border-box;
 }
 
+/* Style pour le body avec image de fond */
 body {
-  background: var(--bg-gradient);
+  background: 
+    linear-gradient(rgba(13, 0, 26, 0.85), rgba(26, 0, 51, 0.9)), /* Overlay sombre */
+    url('/src/assets/images/Gemini_Generated_Image_e4t8c5e4t8c5e4t8.png') center/cover no-repeat fixed;
   color: var(--text-primary);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Effet de flou optionnel sur l'image de fond */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  filter: blur(2px);
+  z-index: -2;
+}
+
+/* Overlay coloré pour améliorer la lisibilité */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 0, 26, 0.9) 0%,
+    rgba(26, 0, 51, 0.85) 50%,
+    rgba(100, 80, 255, 0.1) 100%
+  );
+  z-index: -1;
 }
 
 .app-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .main-content {
   flex: 1;
-  padding-top: 80px; /* ← hauteur header – à ajuster selon ton Header */
+  padding-top: 85px;
+  background: transparent;
 }
 
-/* ─── Glassmorphism Card ─────────────────────────────────────── */
+/* ─── Glassmorphism Card (révisé pour contraste) ───────────── */
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
-              0 0 0 1px rgba(100, 80, 255, 0.12) inset;
+  box-shadow: 
+    0 25px 70px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(100, 80, 255, 0.2) inset,
+    0 0 30px rgba(100, 80, 255, 0.1);
   padding: 3rem 2.5rem;
   width: 100%;
   max-width: 480px;
   transition: transform 0.4s ease, box-shadow 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 70%
+  );
+  z-index: 1;
+  pointer-events: none;
 }
 
 .glass-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5),
-              0 0 0 2px rgba(123, 94, 255, 0.25) inset;
+  box-shadow: 
+    0 35px 90px rgba(0, 0, 0, 0.6),
+    0 0 0 2px rgba(123, 94, 255, 0.3) inset,
+    0 0 40px rgba(123, 94, 255, 0.15);
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 /* ─── Auth Page Wrapper (plein écran centré) ────────────────── */
 .auth-page-wrapper {
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 85px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: var(--bg-gradient);
+  background: transparent;
 }
 
-/* ─── Form elements ──────────────────────────────────────────── */
+/* ─── Pages publiques et protégées ────────────────────────── */
+.home-placeholder,
+.protected-placeholder,
+.not-found {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.home-placeholder h1,
+.protected-placeholder h1,
+.not-found h1 {
+  background: linear-gradient(90deg, #c3c0ff, #7b5eff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1.5rem;
+}
+
+.home-placeholder p,
+.protected-placeholder p,
+.not-found p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Form elements (améliorés pour contraste) ────────────── */
 h2 {
   text-align: center;
   font-size: 2.4rem;
   font-weight: 700;
   margin-bottom: 2.2rem;
-  background: linear-gradient(90deg, #c3c0ff, #7b5eff);
+  background: linear-gradient(90deg, #ffffff, #a899ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
@@ -93,32 +192,36 @@ h2 {
   display: block;
   margin-bottom: 0.6rem;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
   padding: 1rem 1.3rem;
-  border: 1px solid rgba(123, 94, 255, 0.3);
+  border: 1px solid rgba(123, 94, 255, 0.4);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
   font-size: 1.05rem;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(123, 94, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 0 0 4px rgba(123, 94, 255, 0.25),
+    0 6px 20px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .form-group input::placeholder {
-  color: rgba(192, 192, 255, 0.5);
+  color: rgba(192, 192, 255, 0.6);
 }
 
 /* ─── Password toggle ────────────────────────────────────────── */
@@ -139,16 +242,25 @@ h2 {
   right: 1.1rem;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(123, 94, 255, 0.3);
+  border-radius: 6px;
   color: var(--text-secondary);
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: color 0.25s;
+  transition: all 0.25s;
+  padding: 0.4rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toggle-password:hover {
   color: var(--accent);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent);
 }
 
 /* ─── Error messages ─────────────────────────────────────────── */
@@ -158,15 +270,17 @@ h2 {
   font-size: 0.9rem;
   margin-top: 0.45rem;
   display: block;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .error-message {
-  background: rgba(255, 107, 143, 0.12);
-  border: 1px solid rgba(255, 107, 143, 0.3);
+  background: rgba(255, 107, 143, 0.15);
+  border: 1px solid rgba(255, 107, 143, 0.4);
   padding: 1rem;
   border-radius: 12px;
   text-align: center;
   margin-bottom: 1.8rem;
+  backdrop-filter: blur(10px);
 }
 
 /* ─── Submit Button ──────────────────────────────────────────── */
@@ -182,12 +296,38 @@ button[type="submit"] {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.35s ease;
-  box-shadow: 0 10px 30px rgba(123, 94, 255, 0.35);
+  box-shadow: 
+    0 10px 30px rgba(123, 94, 255, 0.4),
+    0 0 20px rgba(123, 94, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+button[type="submit"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
 }
 
 button[type="submit"]:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(123, 94, 255, 0.5);
+  box-shadow: 
+    0 18px 40px rgba(123, 94, 255, 0.6),
+    0 0 30px rgba(123, 94, 255, 0.3);
+}
+
+button[type="submit"]:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 button[type="submit"]:disabled {
@@ -203,24 +343,74 @@ button[type="submit"]:disabled {
   margin-top: 1.8rem;
   color: var(--text-secondary);
   font-size: 0.98rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .auth-link a {
-  color: var(--accent);
+  color: #b3a6ff;
   font-weight: 600;
   text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
 }
 
 .auth-link a:hover {
   text-decoration: underline;
-  color: #9b85ff;
+  color: #d0c6ff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Animations ────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-card {
+  animation: fadeIn 0.6s ease-out;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 80px;
+  }
+  
+  .auth-page-wrapper {
+    min-height: calc(100vh - 80px);
+  }
+  
+  body {
+    background-attachment: scroll; /* Fixe le bug du fixed sur mobile */
+  }
+  
+  .glass-card {
+    padding: 2.5rem 2rem;
+  }
+}
+
 @media (max-width: 480px) {
   .glass-card {
-    padding: 2.2rem 1.6rem;
+    padding: 2rem 1.5rem;
     margin: 1rem;
     border-radius: 20px;
+  }
+  
+  h2 {
+    font-size: 2rem;
+  }
+  
+  .home-placeholder,
+  .protected-placeholder,
+  .not-found {
+    padding: 2rem 1rem;
+    margin: 1rem;
   }
 }

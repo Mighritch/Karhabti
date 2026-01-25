@@ -10,6 +10,7 @@ const connectDB = require('./config/db');
 
 const indexRouter = require('./routes/index');
 const userRoutes = require('./routes/UserRoutes');
+const agenceRoutes = require('./routes/AgenceRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.use('/', indexRouter);
 app.use('/api/users', userRoutes);
+app.use('/api/agences', agenceRoutes);
 
 // 404
 app.use((req, res, next) => {

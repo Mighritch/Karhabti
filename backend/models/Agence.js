@@ -30,6 +30,22 @@ const agenceSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Veuillez entrer un email valide']
   },
+  typeAgence: {
+    type: String,
+    required: [true, 'Veuillez spécifier le type d\'agence'],
+    enum: ['vente', 'location']
+  },
+  typeVehicule: {
+    type: String,
+    required: [true, 'Veuillez spécifier le type de véhicule'],
+    enum: ['voiture', 'moto']
+  },
+  // On lie l'agence à l'utilisateur (l'agent) qui la crée
+  agent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
