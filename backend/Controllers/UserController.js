@@ -5,10 +5,10 @@ const { validationResult } = require('express-validator');
 // Fonction pour générer un token JWT
 const generateToken = (user) => {
   return jwt.sign(
-    { 
-      id: user._id, 
-      email: user.email, 
-      role: user.role 
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role
     },
     process.env.JWT_SECRET || 'votre-secret-super-long-et-complexe-ici',
     { expiresIn: '7d' } // 7 jours – à ajuster selon tes besoins
@@ -23,9 +23,9 @@ exports.signup = async (req, res) => {
     // Validation express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        errors: errors.array() 
+        errors: errors.array()
       });
     }
 
@@ -146,9 +146,8 @@ exports.signin = async (req, res) => {
 // @access  Private (doit passer par middleware auth)
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-mdp -__v');
-
-    if (!user) {
+    // req.user est déjà attaché par le middleware protect
+    if (!req.user) {
       return res.status(404).json({
         success: false,
         message: 'Utilisateur non trouvé'
@@ -157,7 +156,7 @@ exports.getMe = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user
+      user: req.user
     });
   } catch (error) {
     console.error('Erreur getMe :', error);

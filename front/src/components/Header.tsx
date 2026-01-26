@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiLogOut, FiUser, FiSettings, FiStar, FiMenu, FiX } from 'react-icons/fi';
@@ -33,7 +32,6 @@ export default function Header() {
   return (
     <header className="main-header">
       <div className="header-container">
-        {/* Logo */}
         <Link to="/" className="logo" onClick={closeMenu}>
           <FaCar
             style={{
@@ -47,7 +45,6 @@ export default function Header() {
           <span className="premium-badge">Premium</span>
         </Link>
 
-        {/* Hamburger button - visible seulement sur mobile */}
         <button 
           className="menu-toggle" 
           onClick={toggleMenu}
@@ -56,7 +53,6 @@ export default function Header() {
           {isMenuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
         </button>
 
-        {/* Navigation */}
         <nav className={`header-nav ${isMenuOpen ? 'open' : ''}`}>
           {user && Object.keys(user).length > 0 ? (
             <div className="user-section">
@@ -75,7 +71,18 @@ export default function Header() {
                   onClick={closeMenu}
                 >
                   <FaBuilding className="nav-icon" />
-                  <span>Agence</span>
+                  <span>Mes Agences</span>
+                </Link>
+              )}
+
+              {user.role === 'admin' && (
+                <Link 
+                  to="/admin/agences" 
+                  className={`nav-link admin-agences-link ${isActive('/admin/agences')}`} 
+                  onClick={closeMenu}
+                >
+                  <FaBuilding className="nav-icon" />
+                  <span>Agences</span>
                 </Link>
               )}
 

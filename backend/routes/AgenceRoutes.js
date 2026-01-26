@@ -3,12 +3,15 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const {
   createAgence,
-  getMyAgence
+  getMyAgence,
+  getAllAgences,
+  getPendingAgences,
+  approveAgence
 } = require('../Controllers/AgenceController');
 
 const { body } = require('express-validator');
 
-// Validation pour la création
+// --- Validations ---
 const createAgenceValidator = [
   body('nom').trim().notEmpty().withMessage('Le nom est requis'),
   body('ville').trim().notEmpty().withMessage('La ville est requise'),
@@ -19,15 +22,28 @@ const createAgenceValidator = [
   body('typeVehicule').isIn(['voiture', 'moto']).withMessage('Type de véhicule invalide')
 ];
 
-// Routes protégées
-router.use(protect); // Toutes les routes ci-dessous nécessitent un token
+// --- Routes Protégées (Nécessitent un token) ---
+router.use(protect);
 
-router
-  .route('/')
-  .post(createAgenceValidator, createAgence);
+/**
+ * Routes pour les AGENTS
+ */
+// Créer une agence
+router.post('/', createAgenceValidator, createAgence);
 
-router
-  .route('/me')
-  .get(getMyAgence);
+// Récupérer l'agence de l'agent connecté
+router.get('/me', getMyAgence);
+
+/**
+ * Routes pour les ADMINS
+ */
+// Liste de toutes les agences
+router.get('/all', getAllAgences);
+
+// Agences en attente de validation
+router.get('/pending', getPendingAgences);
+
+// Approuver une agence spécifique
+router.put('/:id/approve', approveAgence);
 
 module.exports = router;

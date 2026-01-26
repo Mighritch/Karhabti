@@ -29,7 +29,9 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 700;
   line-height: 1.2;
 }
@@ -70,8 +72,55 @@ button:focus-visible {
     color: #213547;
     background-color: #ffffff;
   }
-  
+
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Visible Choice Group (Radio Buttons styled as buttons) */
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.choice-item {
+  position: relative;
+}
+
+.choice-item input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.choice-label {
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(100, 108, 255, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 500;
+  color: #ccc;
+  text-align: center;
+  min-width: 100px;
+  user-select: none;
+}
+
+.choice-item input[type="radio"]:checked+.choice-label {
+  background: rgba(100, 108, 255, 0.2);
+  border-color: #646cff;
+  color: white;
+  box-shadow: 0 0 15px rgba(100, 108, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.choice-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(100, 108, 255, 0.4);
 }

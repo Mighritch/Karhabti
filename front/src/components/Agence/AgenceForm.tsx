@@ -3,18 +3,8 @@ import api from '../../services/api';          // ← important : utiliser l'ins
 import { useAuth } from '../../context/AuthContext';
 import { FaSpinner } from 'react-icons/fa';
 import './AgenceForm.css';
+import type { Agence } from './MesAgences';
 
-interface Agence {
-  _id: string;
-  nom: string;
-  ville: string;
-  adresse: string;
-  telephone: string;
-  email: string;
-  typeAgence: 'vente' | 'location';
-  typeVehicule: 'voiture' | 'moto';
-  createdAt: string;
-}
 
 interface AgenceFormProps {
   onSuccess: (newAgence: Agence) => void;
@@ -30,8 +20,8 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
     adresse: '',
     telephone: '',
     email: '',
-    typeAgence: 'vente' as const,
-    typeVehicule: 'voiture' as const,
+    typeAgence: 'vente' as 'vente' | 'location',
+    typeVehicule: 'voiture' as 'voiture' | 'moto',
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -176,18 +166,58 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
 
         <div className="form-group">
           <label>Type d'activité *</label>
-          <select name="typeAgence" value={formData.typeAgence} onChange={handleChange} required>
-            <option value="vente">Vente</option>
-            <option value="location">Location</option>
-          </select>
+          <div className="choice-group">
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="type-vente"
+                name="typeAgence"
+                value="vente"
+                checked={formData.typeAgence === 'vente'}
+                onChange={handleChange}
+              />
+              <label htmlFor="type-vente" className="choice-label">Vente</label>
+            </div>
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="type-location"
+                name="typeAgence"
+                value="location"
+                checked={formData.typeAgence === 'location'}
+                onChange={handleChange}
+              />
+              <label htmlFor="type-location" className="choice-label">Location</label>
+            </div>
+          </div>
         </div>
 
         <div className="form-group">
           <label>Type de véhicule *</label>
-          <select name="typeVehicule" value={formData.typeVehicule} onChange={handleChange} required>
-            <option value="voiture">Voiture</option>
-            <option value="moto">Moto</option>
-          </select>
+          <div className="choice-group">
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="vehicule-voiture"
+                name="typeVehicule"
+                value="voiture"
+                checked={formData.typeVehicule === 'voiture'}
+                onChange={handleChange}
+              />
+              <label htmlFor="vehicule-voiture" className="choice-label">Voiture</label>
+            </div>
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="vehicule-moto"
+                name="typeVehicule"
+                value="moto"
+                checked={formData.typeVehicule === 'moto'}
+                onChange={handleChange}
+              />
+              <label htmlFor="vehicule-moto" className="choice-label">Moto</label>
+            </div>
+          </div>
         </div>
       </div>
 
