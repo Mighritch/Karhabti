@@ -7,7 +7,8 @@ import Register from './components/Auth/Register';
 import Header from './components/Header';
 import Profile from './components/Profile/Profile';
 import Agences from './components/Agence/Agences';
-import MesAgences from './components/Agence/MesAgences'; // Chemin à adapter
+import MesAgences from './components/Agence/MesAgences';
+import AdminAgences from './components/Admin/AdminAgence';
 
 import './App.css';
 
@@ -28,13 +29,16 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<div className="protected-placeholder">Tableau de bord (protégé)</div>} />
                 <Route path="/profile"   element={<Profile />} />
+                
+                {/* Route admin intégrée */}
+                <Route path="/admin/agences" element={<AdminAgences />} />
               </Route>
 
-              {/* Routes publiques */}
+              {/* Routes publiques ou spécifiques aux rôles */}
               <Route path="/" element={<div className="home-placeholder">Page d'accueil publique</div>} />
-
+              
               <Route path="/agences" element={<Agences />} />
-
+              
               <Route path="/mes-agences" element={<MesAgences />} />
 
               {/* Catch-all */}
@@ -47,6 +51,9 @@ function App() {
   );
 }
 
+/**
+ * Composant de mise en page pour l'authentification
+ */
 function CenteredAuth({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth-page-wrapper">

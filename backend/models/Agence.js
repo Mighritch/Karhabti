@@ -1,55 +1,23 @@
 const mongoose = require('mongoose');
 
 const agenceSchema = new mongoose.Schema({
-  nom: {
+  nom: { type: String, required: true },
+  ville: { type: String, required: true },
+  adresse: { type: String, required: true },
+  telephone: { type: String, required: true },
+  email: { type: String, required: true, lowercase: true },
+  typeAgence: { type: String, enum: ['vente', 'location'], required: true },
+  typeVehicule: { type: String, enum: ['voiture', 'moto'], required: true },
+  agent: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  
+  
+  status: {
     type: String,
-    required: [true, 'Veuillez entrer le nom de l\'agence'],
-    trim: true,
-    maxlength: [100, 'Le nom ne doit pas dépasser 100 caractères']
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
   },
-  ville: {
-    type: String,
-    required: [true, 'Veuillez entrer la ville'],
-    trim: true,
-    maxlength: [50, 'La ville ne doit pas dépasser 50 caractères']
-  },
-  adresse: {
-    type: String,
-    required: [true, 'Veuillez entrer l\'adresse'],
-    trim: true,
-    maxlength: [200, 'L\'adresse ne doit pas dépasser 200 caractères']
-  },
-  telephone: {
-    type: String,
-    required: [true, 'Veuillez entrer le numéro de téléphone'],
-    match: [/^\d{8,}$/, 'Veuillez entrer un numéro de téléphone valide']
-  },
-  email: {
-    type: String,
-    required: [true, 'Veuillez entrer l\'email'],
-    lowercase: true,
-    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Veuillez entrer un email valide']
-  },
-  typeAgence: {
-    type: String,
-    required: [true, 'Veuillez spécifier le type d\'agence'],
-    enum: ['vente', 'location']
-  },
-  typeVehicule: {
-    type: String,
-    required: [true, 'Veuillez spécifier le type de véhicule'],
-    enum: ['voiture', 'moto']
-  },
-  // On lie l'agence à l'utilisateur (l'agent) qui la crée
-  agent: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  
+  createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Agence', agenceSchema);

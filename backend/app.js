@@ -8,27 +8,26 @@ const cors = require('cors');
 
 const connectDB = require('./config/db');
 
+// Import des routeurs
 const indexRouter = require('./routes/index');
 const userRoutes = require('./routes/UserRoutes');
 const agenceRoutes = require('./routes/AgenceRoutes');
+const vehiculeRoutes = require('./routes/VehiculeRoutes');   // ← NOUVEAU
 
 const app = express();
 
 // Connexion MongoDB
 connectDB();
 
-// Configuration CORS – IMPORTANT : ne PAS utiliser * avec credentials
+// Configuration CORS – IMPORTANT : adapter selon ton frontend
 app.use(cors({
-  origin: 'http://localhost:5173',          // ← ton port Vite / frontend réel (très souvent 5173)
+  origin: 'http://localhost:5173',          // ← ton frontend (Vite/React/Angular/etc.)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Gère les requêtes OPTIONS (preflight) automatiquement grâce à cors ci-dessus
-// (plus besoin de app.options('*', cors()) si tu utilises la config ci-dessus)
-
-// view engine (supprime si tu n'utilises pas de vues twig côté serveur)
+// View engine (optionnel – à supprimer si tu n’utilises pas de vues serveur)
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'twig');
 
@@ -42,26 +41,32 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/api/users', userRoutes);
 app.use('/api/agences', agenceRoutes);
+app.use('/api/vehicules', vehiculeRoutes);          // ← AJOUTÉ ICI
 
-// 404
+// Catch 404 et forward vers gestionnaire d'erreur
 app.use((req, res, next) => {
   next(createError(404));
 });
 
-// Gestionnaire d'erreurs
+// Gestionnaire d'erreurs centralisé
 app.use((err, req, res, next) => {
+  // Définir les variables locales pour les templates (si tu utilises des vues)
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
+  // Définir le statut
   res.status(err.status || 500);
 
+  // Réponse JSON pour les routes API
   if (req.originalUrl.startsWith('/api/')) {
     res.json({
       success: false,
-      message: err.message || 'Erreur serveur',
+      message: err.message || 'Erreur serveur interne',
       ...(req.app.get('env') === 'development' && { stack: err.stack })
     });
-  } else {
+  } 
+
+  else {
     res.render('error');
   }
 });

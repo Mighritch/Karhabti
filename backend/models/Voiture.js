@@ -1,3 +1,4 @@
+// models/Voiture.js
 const mongoose = require('mongoose');
 
 const voitureSchema = new mongoose.Schema({
@@ -37,10 +38,15 @@ const voitureSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
+  kilometrage: {
+    type: Number,
+    required: [true, 'Veuillez entrer le kilométrage'],
+    min: [0, 'Le kilométrage doit être positif']
+  },
   motorisation: {
     type: String,
     required: [true, 'Veuillez entrer la motorisation'],
-    enum: ['Essence', 'Diesel', 'Électrique', 'Hybride', 'GPL'],
+    enum: ['Essence', 'Diesel', 'Électrique', 'Hybride', 'Hybride rechargeable', 'GPL'],
     trim: true
   },
   puissance: {
@@ -110,11 +116,22 @@ const voitureSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  images: [{
+  typePermis: {
     type: String,
+    enum: ['B'],
+    default: 'B',
+    required: true
+  },
+  images: [{
     url: String,
     nomFichier: String
   }],
+  agence: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agence',
+    required: true,
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

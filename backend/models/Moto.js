@@ -1,3 +1,4 @@
+// models/Moto.js
 const mongoose = require('mongoose');
 
 const motoSchema = new mongoose.Schema({
@@ -62,7 +63,7 @@ const motoSchema = new mongoose.Schema({
   typePermis: {
     type: String,
     required: [true, 'Veuillez entrer le type de permis requis'],
-    enum: ['A1', 'A2', 'A', 'B'],
+    enum: ['A1', 'A'],          // ← Modification importante ici !
     trim: true
   },
   immatriculation: {
@@ -73,10 +74,15 @@ const motoSchema = new mongoose.Schema({
     uppercase: true
   },
   images: [{
-    type: String,
     url: String,
     nomFichier: String
   }],
+  agence: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agence',
+    required: true,
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

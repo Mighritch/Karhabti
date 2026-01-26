@@ -145,12 +145,36 @@ export default function Register() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="role">Je m'inscris en tant que</label>
-          <select id="role" {...registerField('role')}>
-            <option value="user">Utilisateur</option>
-            <option value="agent">Agent</option>
-            <option value="admin">Administrateur</option>
-          </select>
+          <label>Je m'inscris en tant que</label>
+          <div className="choice-group">
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="role-user"
+                value="user"
+                {...registerField('role')}
+              />
+              <label htmlFor="role-user" className="choice-label">Utilisateur</label>
+            </div>
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="role-agent"
+                value="agent"
+                {...registerField('role')}
+              />
+              <label htmlFor="role-agent" className="choice-label">Agent</label>
+            </div>
+            <div className="choice-item">
+              <input
+                type="radio"
+                id="role-admin"
+                value="admin"
+                {...registerField('role')}
+              />
+              <label htmlFor="role-admin" className="choice-label">Administrateur</label>
+            </div>
+          </div>
           {errors.role && <span className="error">{errors.role.message}</span>}
         </div>
 
