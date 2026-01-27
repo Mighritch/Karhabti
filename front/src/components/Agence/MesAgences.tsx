@@ -20,6 +20,12 @@ export interface Agence {
   typeAgence: 'vente' | 'location';
   typeVehicule: 'voiture' | 'moto';
   status: 'pending' | 'approved' | 'rejected';
+  agent?: {
+    _id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
   createdAt: string;
 }
 
@@ -33,9 +39,10 @@ export default function MesAgences() {
   const [showVehiculeForm, setShowVehiculeForm] = useState(false);
   const [showVehiculeList, setShowVehiculeList] = useState(false);
   const [selectedAgence, setSelectedAgence] = useState<Agence | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
-    if (!user || user.role !== 'agent' || !token) {
+    if (!user || (user.role !== 'agent' && user.role !== 'admin') || !token) {
       setLoading(false);
       return;
     }
@@ -143,6 +150,14 @@ export default function MesAgences() {
     setSelectedAgence(agence);
     setShowVehiculeList(true);
     setShowVehiculeForm(false);
+    setShowProfileModal(false);
+  };
+
+  const openAgenceProfile = (agence: Agence) => {
+    setSelectedAgence(agence);
+    setShowProfileModal(true);
+    setShowVehiculeList(false);
+    setShowVehiculeForm(false);
   };
 
   const handleAgenceCreatedOrUpdated = (agence: Agence) => {
@@ -161,23 +176,25 @@ export default function MesAgences() {
     return <div className="access-denied"><h2>Veuillez vous connecter</h2></div>;
   }
 
-  if (user.role !== 'agent') {
-    return <div className="access-denied"><h2>Accès réservé aux agents</h2></div>;
+  if (user.role !== 'agent' && user.role !== 'admin') {
+    return <div className="access-denied"><h2>Accès non autorisé</h2></div>;
   }
 
   return (
     <div className="mes-agences-page">
       <div className="page-header">
-        <h1><FaBuilding /> Mes Agences</h1>
-        <button
-          className="btn-create"
-          onClick={() => {
-            setEditingAgence(null);
-            setShowForm(true);
-          }}
-        >
-          <FaPlus /> Nouvelle agence
-        </button>
+        <h1><FaBuilding /> {user.role === 'admin' ? 'Gestion Globale des Agences' : 'Mes Agences'}</h1>
+        {user.role === 'agent' && (
+          <button
+            className="btn-create"
+            onClick={() => {
+              setEditingAgence(null);
+              setShowForm(true);
+            }}
+          >
+            <FaPlus /> Nouvelle agence
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -186,10 +203,12 @@ export default function MesAgences() {
         </div>
       ) : agences.length === 0 ? (
         <div className="no-agence">
-          <p>Vous n'avez pas encore créé d'agence.</p>
-          <button className="btn-create" onClick={() => setShowForm(true)}>
-            <FaPlus /> Créer mon agence
-          </button>
+          <p>{user.role === 'admin' ? "Aucune agence n'a été créée." : "Vous n'avez pas encore créé d'agence."}</p>
+          {user.role === 'agent' && (
+            <button className="btn-create" onClick={() => setShowForm(true)}>
+              <FaPlus /> Créer mon agence
+            </button>
+          )}
         </div>
       ) : (
         <div className="agences-grid">
@@ -202,10 +221,15 @@ export default function MesAgences() {
                   <span className="type-badge">{agence.typeVehicule === 'voiture' ? '🚗 Voiture' : '🏍️ Moto'}</span>
                   <span className={`status-badge ${agence.status}`}>
                     {agence.status === 'approved' ? 'Approuvée' :
-                     agence.status === 'pending' ? 'En attente' : 'Rejetée'}
+                      agence.status === 'pending' ? 'En attente' : 'Rejetée'}
                   </span>
                 </p>
                 <p><strong>{agence.ville}</strong> • {agence.adresse}</p>
+                {user.role === 'admin' && agence.agent && (
+                  <p className="agent-meta">
+                    👤 Agent : <strong>{agence.agent.prenom} {agence.agent.nom}</strong>
+                  </p>
+                )}
               </div>
 
               <div className="actions">
@@ -219,6 +243,14 @@ export default function MesAgences() {
                     </button>
                   </>
                 )}
+
+                <button
+                  className="btn-profile"
+                  onClick={() => openAgenceProfile(agence)}
+                  title="Voir le profil de l'agence"
+                >
+                  <FaBuilding /> Profil
+                </button>
 
                 <button
                   className="btn-edit"
@@ -276,6 +308,71 @@ export default function MesAgences() {
             onClose={() => setShowVehiculeList(false)}
             onAddClick={() => openVehiculeForm(selectedAgence)}
           />
+        </div>
+      )}
+
+      {showProfileModal && selectedAgence && (
+        <div className="modal-overlay">
+          <div className="agence-profile-modal glass-card">
+            <div className="modal-header">
+              <h2><FaBuilding /> Profil de l'agence</h2>
+              <button className="btn-close" onClick={() => setShowProfileModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body profile-details">
+              <div className="detail-item">
+                <span className="label">Nom de l'agence:</span>
+                <span className="value">{selectedAgence.nom}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Ville:</span>
+                <span className="value">{selectedAgence.ville}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Adresse:</span>
+                <span className="value">{selectedAgence.adresse}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Téléphone:</span>
+                <span className="value">{selectedAgence.telephone}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Email:</span>
+                <span className="value">{selectedAgence.email}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Type d'agence:</span>
+                <span className="value">{selectedAgence.typeAgence === 'vente' ? 'Vente' : 'Location'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Type de véhicules:</span>
+                <span className="value">{selectedAgence.typeVehicule === 'voiture' ? '🚗 Voitures' : '🏍️ Motos'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="label">Statut:</span>
+                <span className={`value status-badge ${selectedAgence.status}`}>
+                  {selectedAgence.status === 'approved' ? 'Approuvée' :
+                    selectedAgence.status === 'pending' ? 'En attente' : 'Rejetée'}
+                </span>
+              </div>
+
+              {selectedAgence.agent && (
+                <div className="agent-info-section">
+                  <h3>Agent Responsable</h3>
+                  <div className="detail-item">
+                    <span className="label">Nom complet:</span>
+                    <span className="value">{selectedAgence.agent.prenom} {selectedAgence.agent.nom}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Email de l'agent:</span>
+                    <span className="value">{selectedAgence.agent.email}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-submit" onClick={() => setShowProfileModal(false)}>Retour</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

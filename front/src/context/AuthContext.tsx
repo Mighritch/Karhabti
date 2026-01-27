@@ -9,7 +9,10 @@ interface User {
   nom: string;
   prenom: string;
   email: string;
+  telephone?: string;
+  dateNaissance?: string;
   role: 'user' | 'agent' | 'admin';
+  isPremium?: boolean;
 }
 
 // ────────────────────────────────────────────────
