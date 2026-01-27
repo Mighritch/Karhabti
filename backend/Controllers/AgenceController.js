@@ -25,7 +25,8 @@ const createAgence = async (req, res) => {
       telephone,
       email,
       typeAgence,
-      typeVehicule
+      typeVehicule,
+      etatVehicule
     } = req.body;
 
     const agence = await Agence.create({
@@ -36,6 +37,7 @@ const createAgence = async (req, res) => {
       email: email.toLowerCase(),
       typeAgence,
       typeVehicule,
+      etatVehicule,
       agent: req.user._id
     });
 
@@ -142,9 +144,18 @@ const approveAgence = async (req, res) => {
       });
     }
 
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Statut invalide. Doit être "approved" ou "rejected"'
+      });
+    }
+
     const agence = await Agence.findByIdAndUpdate(
       req.params.id,
-      { status: 'approved' },
+      { status },
       { new: true, runValidators: true }
     );
 
@@ -157,7 +168,7 @@ const approveAgence = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Agence approuvée avec succès',
+      message: `Agence ${status === 'approved' ? 'approuvée' : 'rejetée'} avec succès`,
       data: agence
     });
   } catch (error) {
@@ -192,7 +203,7 @@ const updateAgence = async (req, res) => {
 
     const allowedUpdates = [
       'nom', 'ville', 'adresse', 'telephone', 'email',
-      'typeAgence', 'typeVehicule'
+      'typeAgence', 'typeVehicule', 'etatVehicule'
     ];
 
     allowedUpdates.forEach(field => {

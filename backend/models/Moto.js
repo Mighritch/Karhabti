@@ -57,8 +57,14 @@ const motoSchema = new mongoose.Schema({
   },
   kilometrage: {
     type: Number,
-    required: [true, 'Veuillez entrer le kilométrage'],
+    required: false, // Changed from true
     min: [0, 'Le kilométrage doit être positif']
+  },
+  etat: {
+    type: String,
+    enum: ['neuf', 'occasion'],
+    required: [true, 'Veuillez préciser l\'état'],
+    default: 'occasion'
   },
   typePermis: {
     type: String,

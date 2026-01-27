@@ -24,7 +24,9 @@ export default function VehiculeForm({
   onCancel,
 }: VehiculeFormProps) {
   const { token } = useAuth();
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<any>({
+    etat: 'occasion' // Default value
+  });
   const [images, setImages] = useState<VehiculeImage[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +127,7 @@ export default function VehiculeForm({
         <input
           type="number"
           name="annee"
-          value={formData.annee || ''}
+          value={formData.annee ?? ''}
           onChange={handleChange}
           min="1900"
           max={new Date().getFullYear()}
@@ -145,16 +147,46 @@ export default function VehiculeForm({
       </div>
 
       <div className="form-group">
-        <label>Kilométrage *</label>
-        <input
-          type="number"
-          name="kilometrage"
-          value={formData.kilometrage || ''}
-          onChange={handleChange}
-          min="0"
-          required
-        />
+        <label>État *</label>
+        <div className="choice-group">
+          <div className="choice-item">
+            <input
+              type="radio"
+              id="etat-v-neuf"
+              name="etat"
+              value="neuf"
+              checked={formData.etat === 'neuf'}
+              onChange={handleChange}
+            />
+            <label htmlFor="etat-v-neuf">Neuf</label>
+          </div>
+          <div className="choice-item">
+            <input
+              type="radio"
+              id="etat-v-occasion"
+              name="etat"
+              value="occasion"
+              checked={formData.etat === 'occasion'}
+              onChange={handleChange}
+            />
+            <label htmlFor="etat-v-occasion">Occasion</label>
+          </div>
+        </div>
       </div>
+
+      {formData.etat === 'occasion' && (
+        <div className="form-group">
+          <label>Kilométrage *</label>
+          <input
+            type="number"
+            name="kilometrage"
+            value={formData.kilometrage ?? ''}
+            onChange={handleChange}
+            min="0"
+            required
+          />
+        </div>
+      )}
 
       <div className="form-group">
         <label>Immatriculation *</label>
@@ -266,7 +298,7 @@ export default function VehiculeForm({
               <input
                 type="number"
                 name="puissance"
-                value={formData.puissance || ''}
+                value={formData.puissance ?? ''}
                 onChange={handleChange}
                 min="1"
                 required
@@ -324,7 +356,7 @@ export default function VehiculeForm({
               <input
                 type="number"
                 name="cylindre"
-                value={formData.cylindre || ''}
+                value={formData.cylindre ?? ''}
                 onChange={handleChange}
                 min="50"
                 required

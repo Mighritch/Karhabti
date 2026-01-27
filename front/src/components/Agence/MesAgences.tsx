@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
 import AgenceForm from './AgenceForm';
 import VehiculeForm from '../Vehicule/VehiculeForm';
 import VehiculeList from '../Vehicule/VehiculeList';
@@ -68,6 +68,20 @@ export default function MesAgences() {
 
     fetchMyAgences();
   }, [user, token]);
+
+  const handleStatusChange = async (agenceId: string, status: 'approved' | 'rejected') => {
+    try {
+      const res = await api.put(`/agences/${agenceId}/approve`, { status });
+      if (res.data.success) {
+        setAgences((prev) =>
+          prev.map((a) => (a._id === agenceId ? { ...a, status } : a))
+        );
+        toast.success(`Agence ${status === 'approved' ? 'approuvée' : 'rejetée'}`);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Erreur lors du changement de statut');
+    }
+  };
 
   const handleEdit = (agence: Agence) => {
     setEditingAgence(agence);
@@ -241,6 +255,25 @@ export default function MesAgences() {
               </div>
 
               <div className="actions">
+                {user.role === 'admin' && agence.status === 'pending' && (
+                  <div className="admin-approval-actions">
+                    <button
+                      className="btn-approve"
+                      onClick={() => handleStatusChange(agence._id, 'approved')}
+                      title="Approuver l'agence"
+                    >
+                      <FaCheck /> Approuver
+                    </button>
+                    <button
+                      className="btn-reject"
+                      onClick={() => handleStatusChange(agence._id, 'rejected')}
+                      title="Rejeter l'agence"
+                    >
+                      <FaTimes /> Rejeter
+                    </button>
+                  </div>
+                )}
+
                 {agence.status === 'approved' && (
                   <>
                     <button className="btn-list-vehicles" onClick={() => openVehiculeList(agence)}>
@@ -260,21 +293,25 @@ export default function MesAgences() {
                   <FaBuilding /> Profil
                 </button>
 
-                <button
-                  className="btn-edit"
-                  onClick={() => handleEdit(agence)}
-                  title="Modifier cette agence"
-                >
-                  <FaEdit /> Modifier
-                </button>
+                {(user.role === 'admin' || user.role === 'agent') && (
+                  <button
+                    className="btn-edit"
+                    onClick={() => handleEdit(agence)}
+                    title="Modifier cette agence"
+                  >
+                    <FaEdit /> Modifier
+                  </button>
+                )}
 
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDelete(agence._id, agence.nom)}
-                  title="Supprimer cette agence"
-                >
-                  <FaTrash /> Supprimer
-                </button>
+                {(user.role === 'admin' || user.role === 'agent') && (
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(agence._id, agence.nom)}
+                    title="Supprimer cette agence"
+                  >
+                    <FaTrash /> Supprimer
+                  </button>
+                )}
               </div>
             </div>
           ))}
