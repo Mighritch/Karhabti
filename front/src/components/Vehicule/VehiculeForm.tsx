@@ -1,8 +1,8 @@
 // src/components/Vehicule/VehiculeForm.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { FaSpinner, FaCar, FaMotorcycle, FaCloudUploadAlt, FaTrash } from 'react-icons/fa';
+import { FaSpinner, FaCar, FaMotorcycle, FaCloudUploadAlt, FaTrash, FaMagic } from 'react-icons/fa';
 import './VehiculeForm.css';
 
 interface VehiculeImage {
@@ -30,6 +30,37 @@ export default function VehiculeForm({
   const [images, setImages] = useState<VehiculeImage[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  const fetchModelSuggestions = async () => {
+    if (!formData.marque || formData.marque.length < 2) return;
+    setLoadingModels(true);
+    setError(null);
+    try {
+      const res = await api.post('/vehicules/suggest-models', {
+        marque: formData.marque,
+        type: typeVehicule
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setModelSuggestions(res.data.data);
+      }
+    } catch (err: any) {
+      console.error('Erreur suggestions models:', err);
+      const msg = err.response?.data?.message || 'L\'IA est surchargée, veuillez réessayer.';
+      setError(msg);
+      setTimeout(() => setError(null), 5000); // Effacer l'erreur après 5s
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  const selectModel = (model: string) => {
+    setFormData((prev: any) => ({ ...prev, modele: model }));
+    setModelSuggestions([]);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -102,24 +133,58 @@ export default function VehiculeForm({
     <>
       <div className="form-group">
         <label>Marque *</label>
-        <input
-          type="text"
-          name="marque"
-          value={formData.marque || ''}
-          onChange={handleChange}
-          required
-        />
+        <div className="input-with-action">
+          <input
+            type="text"
+            name="marque"
+            value={formData.marque || ''}
+            onChange={handleChange}
+            required
+            placeholder="Ex: Toyota, BMW..."
+          />
+          <button
+            type="button"
+            className="btn-ai-suggest"
+            onClick={fetchModelSuggestions}
+            disabled={loadingModels || !formData.marque}
+            title="Suggérer des modèles via IA"
+          >
+            {loadingModels ? <FaSpinner className="spin" /> : <FaMagic />}
+          </button>
+        </div>
       </div>
 
       <div className="form-group">
         <label>Modèle *</label>
-        <input
-          type="text"
-          name="modele"
-          value={formData.modele || ''}
-          onChange={handleChange}
-          required
-        />
+        <div className="model-input-container">
+          <input
+            type="text"
+            name="modele"
+            value={formData.modele || ''}
+            onChange={handleChange}
+            required
+            placeholder="Ex: Corolla, X5..."
+          />
+          {modelSuggestions.length > 0 && (
+            <div className="suggestions-dropdown">
+              <div className="suggestions-header">
+                <span>Modèles suggérés par l'IA</span>
+                <button type="button" onClick={() => setModelSuggestions([])}>&times;</button>
+              </div>
+              <div className="suggestions-list">
+                {modelSuggestions.map((model, idx) => (
+                  <div
+                    key={idx}
+                    className="suggestion-item"
+                    onClick={() => selectModel(model)}
+                  >
+                    {model}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="form-group">
