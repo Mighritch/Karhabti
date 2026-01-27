@@ -469,3 +469,48 @@
   padding: 0.6rem 1.5rem;
   font-size: 0.9rem;
 }
+
+/* Admin Approval Actions */
+.admin-approval-actions {
+  display: flex;
+  gap: 0.8rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.btn-approve,
+.btn-reject {
+  flex: 1;
+  padding: 0.85rem;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transition: all 0.25s;
+  border: none;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.btn-approve {
+  background: linear-gradient(135deg, #00cc99, #00a67d);
+  color: #1a1a2e;
+}
+
+.btn-approve:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 204, 153, 0.4);
+}
+
+.btn-reject {
+  background: linear-gradient(135deg, #ff4d4d, #e60000);
+  color: white;
+}
+
+.btn-reject:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 77, 77, 0.4);
+}
