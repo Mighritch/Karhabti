@@ -233,6 +233,12 @@
   color: #a5b4fc;
 }
 
+.type-badge.etat-badge {
+  background: rgba(139, 92, 246, 0.25);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
 .status-badge {
   padding: 0.4rem 1rem;
   border-radius: 20px;

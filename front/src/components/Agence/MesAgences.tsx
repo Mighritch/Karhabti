@@ -17,8 +17,9 @@ export interface Agence {
   adresse: string;
   telephone: string;
   email: string;
-  typeAgence: 'vente' | 'location';
-  typeVehicule: 'voiture' | 'moto';
+  typeAgence: ('vente' | 'location')[];
+  typeVehicule: ('voiture' | 'moto')[];
+  etatVehicule?: ('neuf' | 'occasion')[];
   status: 'pending' | 'approved' | 'rejected';
   agent?: {
     _id: string;
@@ -217,8 +218,15 @@ export default function MesAgences() {
               <h3>{agence.nom}</h3>
               <div className="card-body">
                 <p>
-                  <span className="type-badge">{agence.typeAgence === 'vente' ? 'Vente' : 'Location'}</span>
-                  <span className="type-badge">{agence.typeVehicule === 'voiture' ? '🚗 Voiture' : '🏍️ Moto'}</span>
+                  {agence.typeAgence.map(t => (
+                    <span key={t} className="type-badge">{t === 'vente' ? 'Vente' : 'Location'}</span>
+                  ))}
+                  {agence.typeVehicule.map(v => (
+                    <span key={v} className="type-badge">{v === 'voiture' ? '🚗 Voiture' : '🏍️ Moto'}</span>
+                  ))}
+                  {agence.typeAgence.includes('vente') && agence.etatVehicule && agence.etatVehicule.map(e => (
+                    <span key={e} className="type-badge etat-badge">{e === 'neuf' ? '✨ Neuf' : '🔧 Occasion'}</span>
+                  ))}
                   <span className={`status-badge ${agence.status}`}>
                     {agence.status === 'approved' ? 'Approuvée' :
                       agence.status === 'pending' ? 'En attente' : 'Rejetée'}
@@ -290,7 +298,7 @@ export default function MesAgences() {
         <div className="modal-overlay">
           <VehiculeForm
             agenceId={selectedAgence._id}
-            typeVehicule={selectedAgence.typeVehicule}
+            typeVehicule={selectedAgence.typeVehicule[0]} // Use first type as default
             onSuccess={() => {
               setShowVehiculeForm(false);
               openVehiculeList(selectedAgence);
@@ -304,7 +312,7 @@ export default function MesAgences() {
         <div className="modal-overlay">
           <VehiculeList
             agenceId={selectedAgence._id}
-            typeVehicule={selectedAgence.typeVehicule}
+            typeVehicule={selectedAgence.typeVehicule[0]} // Pass the first type
             onClose={() => setShowVehiculeList(false)}
             onAddClick={() => openVehiculeForm(selectedAgence)}
           />
@@ -341,12 +349,18 @@ export default function MesAgences() {
               </div>
               <div className="detail-item">
                 <span className="label">Type d'agence:</span>
-                <span className="value">{selectedAgence.typeAgence === 'vente' ? 'Vente' : 'Location'}</span>
+                <span className="value">{selectedAgence.typeAgence.map(t => t === 'vente' ? 'Vente' : 'Location').join(' & ')}</span>
               </div>
               <div className="detail-item">
                 <span className="label">Type de véhicules:</span>
-                <span className="value">{selectedAgence.typeVehicule === 'voiture' ? '🚗 Voitures' : '🏍️ Motos'}</span>
+                <span className="value">{selectedAgence.typeVehicule.map(v => v === 'voiture' ? '🚗 Voitures' : '🏍️ Motos').join(' & ')}</span>
               </div>
+              {selectedAgence.typeAgence.includes('vente') && selectedAgence.etatVehicule && (
+                <div className="detail-item">
+                  <span className="label">État des véhicules:</span>
+                  <span className="value">{selectedAgence.etatVehicule.map(e => e === 'neuf' ? 'Neuf' : 'Occasion').join(' & ')}</span>
+                </div>
+              )}
               <div className="detail-item">
                 <span className="label">Statut:</span>
                 <span className={`value status-badge ${selectedAgence.status}`}>
