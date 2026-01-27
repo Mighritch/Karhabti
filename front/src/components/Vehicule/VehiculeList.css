@@ -73,6 +73,29 @@
     color: #ef4444;
 }
 
+.search-bar-container {
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
 .vehicule-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

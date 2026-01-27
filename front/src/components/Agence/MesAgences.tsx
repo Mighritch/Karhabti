@@ -198,7 +198,12 @@ export default function MesAgences() {
   return (
     <div className="mes-agences-page">
       <div className="page-header">
-        <h1><FaBuilding /> {user.role === 'admin' ? 'Gestion Globale des Agences' : 'Mes Agences'}</h1>
+        <div className="header-title-wrapper">
+          <h1><FaBuilding /> {user.role === 'admin' ? 'Gestion Globale des Agences' : 'Mes Agences'}</h1>
+          {user.role === 'admin' && agences.length > 0 && (
+            <span className="total-badge">Total: {agences.length}</span>
+          )}
+        </div>
         {user.role === 'agent' && (
           <button
             className="btn-create"
