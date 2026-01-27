@@ -1,15 +1,8 @@
-// filename: Controllers/AgenceController.js
-
 const Agence = require('../models/Agence');
 const { validationResult } = require('express-validator');
 
-/**
- * @desc    Créer une nouvelle agence (Réservé aux agents)
- * @route   POST /api/agences
- */
 const createAgence = async (req, res) => {
   try {
-    // 1. Vérification rôle
     if (req.user.role !== 'agent') {
       return res.status(403).json({
         success: false,
@@ -17,7 +10,6 @@ const createAgence = async (req, res) => {
       });
     }
 
-    // 2. Validation des champs (venant d'express-validator)
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -36,18 +28,6 @@ const createAgence = async (req, res) => {
       typeVehicule
     } = req.body;
 
-    // 3. Vérifier si l'agent a déjà une agence (Décommentez si un agent est limité à une seule agence)
-    /*
-    const existingAgence = await Agence.findOne({ agent: req.user._id });
-    if (existingAgence) {
-      return res.status(400).json({
-        success: false,
-        message: 'Vous avez déjà créé une agence'
-      });
-    }
-    */
-
-    // 4. Création de l'agence (le status sera 'pending' par défaut via le modèle)
     const agence = await Agence.create({
       nom,
       ville,
@@ -59,7 +39,6 @@ const createAgence = async (req, res) => {
       agent: req.user._id
     });
 
-    // 5. Réponse succès
     res.status(201).json({
       success: true,
       message: 'Agence créée avec succès et en attente de validation',
@@ -76,10 +55,6 @@ const createAgence = async (req, res) => {
   }
 };
 
-/**
- * @desc    Récupérer l'agence de l'agent connecté
- * @route   GET /api/agences/my-agence
- */
 const getMyAgence = async (req, res) => {
   try {
     if (req.user.role !== 'agent') {
@@ -107,10 +82,6 @@ const getMyAgence = async (req, res) => {
   }
 };
 
-/**
- * @desc    Liste de TOUTES les agences (Admin uniquement)
- * @route   GET /api/agences
- */
 const getAllAgences = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -136,10 +107,6 @@ const getAllAgences = async (req, res) => {
   }
 };
 
-/**
- * @desc    Agences en attente de validation (Admin uniquement)
- * @route   GET /api/agences/pending
- */
 const getPendingAgences = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -165,10 +132,6 @@ const getPendingAgences = async (req, res) => {
   }
 };
 
-/**
- * @desc    Approuver une agence (Admin uniquement)
- * @route   PUT /api/agences/:id/approve
- */
 const approveAgence = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -204,10 +167,100 @@ const approveAgence = async (req, res) => {
   }
 };
 
+const updateAgence = async (req, res) => {
+  try {
+    if (req.user.role !== 'agent') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès réservé aux agents'
+      });
+    }
+
+    const agence = await Agence.findOne({
+      _id: req.params.id,
+      agent: req.user._id
+    });
+
+    if (!agence) {
+      return res.status(404).json({
+        success: false,
+        message: 'Agence non trouvée ou ne vous appartient pas'
+      });
+    }
+
+    const allowedUpdates = [
+      'nom', 'ville', 'adresse', 'telephone', 'email',
+      'typeAgence', 'typeVehicule'
+    ];
+
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        agence[field] = req.body[field];
+      }
+    });
+
+    if (req.body.email) {
+      agence.email = req.body.email.toLowerCase();
+    }
+
+    const updatedAgence = await agence.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Agence modifiée avec succès',
+      data: updatedAgence
+    });
+  } catch (error) {
+    console.error('Erreur update agence:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la modification',
+      error: error.message
+    });
+  }
+};
+
+const deleteAgence = async (req, res) => {
+  try {
+    if (req.user.role !== 'agent') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès réservé aux agents'
+      });
+    }
+
+    const agence = await Agence.findOneAndDelete({
+      _id: req.params.id,
+      agent: req.user._id
+    });
+
+    if (!agence) {
+      return res.status(404).json({
+        success: false,
+        message: 'Agence non trouvée ou ne vous appartient pas'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Agence supprimée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur suppression agence:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la suppression',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createAgence,
   getMyAgence,
   getAllAgences,
   getPendingAgences,
-  approveAgence
+  approveAgence,
+  updateAgence,
+  deleteAgence
 };

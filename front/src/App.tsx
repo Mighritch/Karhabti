@@ -10,6 +10,8 @@ import Agences from './components/Agence/Agences';
 import MesAgences from './components/Agence/MesAgences';
 import AdminAgences from './components/Admin/AdminAgence';
 
+import { Toaster } from 'react-hot-toast';
+
 import './App.css';
 
 function App() {
@@ -22,13 +24,13 @@ function App() {
           <main className="main-content">
             <Routes>
               {/* Pages d'authentification centrées */}
-              <Route path="/login"    element={<CenteredAuth><Login /></CenteredAuth>} />
+              <Route path="/login" element={<CenteredAuth><Login /></CenteredAuth>} />
               <Route path="/register" element={<CenteredAuth><Register /></CenteredAuth>} />
 
               {/* Routes protégées */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<div className="protected-placeholder">Tableau de bord (protégé)</div>} />
-                <Route path="/profile"   element={<Profile />} />
+                <Route path="/profile" element={<Profile />} />
                 
                 {/* Route admin intégrée */}
                 <Route path="/admin/agences" element={<AdminAgences />} />
@@ -46,6 +48,17 @@ function App() {
             </Routes>
           </main>
         </div>
+
+        {/* Notification toaster global */}
+        <Toaster 
+          position="top-center" 
+          toastOptions={{ 
+            duration: 4000,
+            // Vous pouvez ajouter d'autres options si besoin :
+            // style: { ... },
+            // success: { style: { ... } },
+          }} 
+        />
       </BrowserRouter>
     </AuthProvider>
   );

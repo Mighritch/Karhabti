@@ -1,31 +1,46 @@
-import { useState } from 'react';
-import api from '../../services/api';          // ← important : utiliser l'instance centralisée
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { FaSpinner } from 'react-icons/fa';
 import './AgenceForm.css';
 import type { Agence } from './MesAgences';
 
-
 interface AgenceFormProps {
-  onSuccess: (newAgence: Agence) => void;
+  agence?: Agence | null;
+  onSuccess: (agence: Agence) => void;
   onCancel: () => void;
 }
 
-export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
-  const { token, user } = useAuth();   // ← on récupère aussi user pour debug
+export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormProps) {
+  const { token } = useAuth();
+  const isEditMode = !!agence;
 
   const [formData, setFormData] = useState({
-    nom: '',
-    ville: '',
-    adresse: '',
-    telephone: '',
-    email: '',
-    typeAgence: 'vente' as 'vente' | 'location',
-    typeVehicule: 'voiture' as 'voiture' | 'moto',
+    nom: agence?.nom || '',
+    ville: agence?.ville || '',
+    adresse: agence?.adresse || '',
+    telephone: agence?.telephone || '',
+    email: agence?.email || '',
+    typeAgence: (agence?.typeAgence || 'vente') as 'vente' | 'location',
+    typeVehicule: (agence?.typeVehicule || 'voiture') as 'voiture' | 'moto',
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (agence) {
+      setFormData({
+        nom: agence.nom || '',
+        ville: agence.ville || '',
+        adresse: agence.adresse || '',
+        telephone: agence.telephone || '',
+        email: agence.email || '',
+        typeAgence: agence.typeAgence || 'vente',
+        typeVehicule: agence.typeVehicule || 'voiture',
+      });
+    }
+  }, [agence]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -37,51 +52,37 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const effectiveToken = token || localStorage.getItem('token');
-
-    if (!effectiveToken) {
-      setError("Vous devez être connecté pour créer une agence.");
-      return;
-    }
-
-    if (user?.role !== 'agent') {
-      setError("Seuls les agents peuvent créer une agence.");
-      return;
-    }
-
     if (submitting) return;
-
     setSubmitting(true);
     setError(null);
 
     try {
-      console.log("→ Données envoyées :", formData);
-
-      const res = await api.post<{ success: boolean; data: Agence }>(
-        '/agences',
-        formData
-      );
-
-      console.log("→ Réponse :", res.data);
+      let res;
+      if (isEditMode && agence) {
+        res = await api.put(`/agences/${agence._id}`, formData);
+      } else {
+        res = await api.post('/agences', formData);
+      }
 
       if (res.data?.success && res.data.data) {
         onSuccess(res.data.data);
-        setFormData({
-          nom: '',
-          ville: '',
-          adresse: '',
-          telephone: '',
-          email: '',
-          typeAgence: 'vente',
-          typeVehicule: 'voiture',
-        });
+        if (!isEditMode) {
+          setFormData({
+            nom: '',
+            ville: '',
+            adresse: '',
+            telephone: '',
+            email: '',
+            typeAgence: 'vente',
+            typeVehicule: 'voiture',
+          });
+        }
       } else {
-        setError("Réponse serveur invalide");
+        setError('Réponse invalide du serveur');
       }
     } catch (err: any) {
-      console.error("Erreur création agence :", err);
-
-      let message = 'Erreur lors de la création';
+      console.error('Erreur opération agence:', err);
+      let message = 'Une erreur est survenue';
 
       if (err.response?.data?.message) {
         message = err.response.data.message;
@@ -99,7 +100,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="agence-form glass-card" noValidate>
-      <h3>Créer une nouvelle agence</h3>
+      <h3>{isEditMode ? 'Modifier l’agence' : 'Créer une nouvelle agence'}</h3>
 
       {error && <div className="form-error">{error}</div>}
 
@@ -124,7 +125,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
             value={formData.ville}
             onChange={handleChange}
             required
-            placeholder="ex: Hammamet"
+            placeholder="ex: Tunis"
           />
         </div>
 
@@ -136,7 +137,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
             value={formData.adresse}
             onChange={handleChange}
             required
-            placeholder="Rue Taieb El Azzabi, Hammamet..."
+            placeholder="Rue exemple, Tunis..."
           />
         </div>
 
@@ -148,7 +149,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
             value={formData.telephone}
             onChange={handleChange}
             required
-            placeholder="ex: 22854987"
+            placeholder="ex: 98765432"
           />
         </div>
 
@@ -160,7 +161,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
             value={formData.email}
             onChange={handleChange}
             required
-            placeholder="ex: staraauto@gmail.com"
+            placeholder="ex: contact@agence.tn"
           />
         </div>
 
@@ -176,7 +177,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
                 checked={formData.typeAgence === 'vente'}
                 onChange={handleChange}
               />
-              <label htmlFor="type-vente" className="choice-label">Vente</label>
+              <label htmlFor="type-vente">Vente</label>
             </div>
             <div className="choice-item">
               <input
@@ -187,7 +188,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
                 checked={formData.typeAgence === 'location'}
                 onChange={handleChange}
               />
-              <label htmlFor="type-location" className="choice-label">Location</label>
+              <label htmlFor="type-location">Location</label>
             </div>
           </div>
         </div>
@@ -204,7 +205,7 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
                 checked={formData.typeVehicule === 'voiture'}
                 onChange={handleChange}
               />
-              <label htmlFor="vehicule-voiture" className="choice-label">Voiture</label>
+              <label htmlFor="vehicule-voiture">Voiture</label>
             </div>
             <div className="choice-item">
               <input
@@ -215,22 +216,29 @@ export default function AgenceForm({ onSuccess, onCancel }: AgenceFormProps) {
                 checked={formData.typeVehicule === 'moto'}
                 onChange={handleChange}
               />
-              <label htmlFor="vehicule-moto" className="choice-label">Moto</label>
+              <label htmlFor="vehicule-moto">Moto</label>
             </div>
           </div>
         </div>
       </div>
 
       <div className="form-actions">
-        <button type="button" className="btn-cancel" onClick={onCancel} disabled={submitting}>
+        <button
+          type="button"
+          className="btn-cancel"
+          onClick={onCancel}
+          disabled={submitting}
+        >
           Annuler
         </button>
 
         <button type="submit" className="btn-submit" disabled={submitting}>
           {submitting ? (
             <>
-              <FaSpinner className="spin" /> Création en cours...
+              <FaSpinner className="spin" /> En cours...
             </>
+          ) : isEditMode ? (
+            'Enregistrer les modifications'
           ) : (
             'Créer l’agence'
           )}
