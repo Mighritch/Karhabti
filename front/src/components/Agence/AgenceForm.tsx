@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
 import { FaSpinner } from 'react-icons/fa';
 import './AgenceForm.css';
 import type { Agence } from './MesAgences';
@@ -12,7 +11,6 @@ interface AgenceFormProps {
 }
 
 export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormProps) {
-  const { token } = useAuth();
   const isEditMode = !!agence;
 
   const [formData, setFormData] = useState({
@@ -21,8 +19,9 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
     adresse: agence?.adresse || '',
     telephone: agence?.telephone || '',
     email: agence?.email || '',
-    typeAgence: (agence?.typeAgence || 'vente') as 'vente' | 'location',
-    typeVehicule: (agence?.typeVehicule || 'voiture') as 'voiture' | 'moto',
+    typeAgence: (agence?.typeAgence || ['vente']) as ('vente' | 'location')[],
+    typeVehicule: (agence?.typeVehicule || ['voiture']) as ('voiture' | 'moto')[],
+    etatVehicule: (agence?.etatVehicule || ['neuf']) as ('neuf' | 'occasion')[],
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -36,8 +35,9 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
         adresse: agence.adresse || '',
         telephone: agence.telephone || '',
         email: agence.email || '',
-        typeAgence: agence.typeAgence || 'vente',
-        typeVehicule: agence.typeVehicule || 'voiture',
+        typeAgence: agence.typeAgence || ['vente'],
+        typeVehicule: agence.typeVehicule || ['voiture'],
+        etatVehicule: agence.etatVehicule || ['neuf'],
       });
     }
   }, [agence]);
@@ -47,6 +47,22 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (name: string, value: string) => {
+    setFormData((prev: any) => {
+      const currentValues = prev[name] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v: string) => v !== value)
+        : [...currentValues, value];
+
+      // Ensure at least one is selected for required fields
+      if (newValues.length === 0 && (name === 'typeAgence' || name === 'typeVehicule')) {
+        return prev;
+      }
+
+      return { ...prev, [name]: newValues };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,8 +89,9 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
             adresse: '',
             telephone: '',
             email: '',
-            typeAgence: 'vente',
-            typeVehicule: 'voiture',
+            typeAgence: ['vente'],
+            typeVehicule: ['voiture'],
+            etatVehicule: ['neuf'],
           });
         }
       } else {
@@ -170,23 +187,19 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
           <div className="choice-group">
             <div className="choice-item">
               <input
-                type="radio"
+                type="checkbox"
                 id="type-vente"
-                name="typeAgence"
-                value="vente"
-                checked={formData.typeAgence === 'vente'}
-                onChange={handleChange}
+                checked={formData.typeAgence.includes('vente')}
+                onChange={() => handleCheckboxChange('typeAgence', 'vente')}
               />
               <label htmlFor="type-vente">Vente</label>
             </div>
             <div className="choice-item">
               <input
-                type="radio"
+                type="checkbox"
                 id="type-location"
-                name="typeAgence"
-                value="location"
-                checked={formData.typeAgence === 'location'}
-                onChange={handleChange}
+                checked={formData.typeAgence.includes('location')}
+                onChange={() => handleCheckboxChange('typeAgence', 'location')}
               />
               <label htmlFor="type-location">Location</label>
             </div>
@@ -198,28 +211,50 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
           <div className="choice-group">
             <div className="choice-item">
               <input
-                type="radio"
+                type="checkbox"
                 id="vehicule-voiture"
-                name="typeVehicule"
-                value="voiture"
-                checked={formData.typeVehicule === 'voiture'}
-                onChange={handleChange}
+                checked={formData.typeVehicule.includes('voiture')}
+                onChange={() => handleCheckboxChange('typeVehicule', 'voiture')}
               />
               <label htmlFor="vehicule-voiture">Voiture</label>
             </div>
             <div className="choice-item">
               <input
-                type="radio"
+                type="checkbox"
                 id="vehicule-moto"
-                name="typeVehicule"
-                value="moto"
-                checked={formData.typeVehicule === 'moto'}
-                onChange={handleChange}
+                checked={formData.typeVehicule.includes('moto')}
+                onChange={() => handleCheckboxChange('typeVehicule', 'moto')}
               />
               <label htmlFor="vehicule-moto">Moto</label>
             </div>
           </div>
         </div>
+
+        {formData.typeAgence.includes('vente') && (
+          <div className="form-group">
+            <label>État des véhicules *</label>
+            <div className="choice-group">
+              <div className="choice-item">
+                <input
+                  type="checkbox"
+                  id="etat-neuf"
+                  checked={formData.etatVehicule.includes('neuf')}
+                  onChange={() => handleCheckboxChange('etatVehicule', 'neuf')}
+                />
+                <label htmlFor="etat-neuf">Neuf</label>
+              </div>
+              <div className="choice-item">
+                <input
+                  type="checkbox"
+                  id="etat-occasion"
+                  checked={formData.etatVehicule.includes('occasion')}
+                  onChange={() => handleCheckboxChange('etatVehicule', 'occasion')}
+                />
+                <label htmlFor="etat-occasion">Occasion</label>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="form-actions">
