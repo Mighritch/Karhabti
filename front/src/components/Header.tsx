@@ -9,7 +9,7 @@ export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -26,7 +26,7 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
-  const isActive = (path: string) => 
+  const isActive = (path: string) =>
     location.pathname.startsWith(path) ? 'active' : '';
 
   return (
@@ -45,8 +45,8 @@ export default function Header() {
           <span className="premium-badge">Premium</span>
         </Link>
 
-        <button 
-          className="menu-toggle" 
+        <button
+          className="menu-toggle"
           onClick={toggleMenu}
           aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
         >
@@ -65,8 +65,8 @@ export default function Header() {
               </div>
 
               {user.role === 'agent' && (
-                <Link 
-                  to="/mes-agences" 
+                <Link
+                  to="/mes-agences"
                   className={`nav-link agence-link ${isActive('/mes-agences')}`}
                   onClick={closeMenu}
                 >
@@ -76,18 +76,18 @@ export default function Header() {
               )}
 
               {user.role === 'admin' && (
-                <Link 
-                  to="/admin/agences" 
-                  className={`nav-link admin-agences-link ${isActive('/admin/agences')}`} 
+                <Link
+                  to="/mes-agences"
+                  className={`nav-link admin-agences-link ${isActive('/mes-agences')}`}
                   onClick={closeMenu}
                 >
                   <FaBuilding className="nav-icon" />
-                  <span>Agences</span>
+                  <span>Gestion Agences</span>
                 </Link>
               )}
 
-              <Link 
-                to="/profile" 
+              <Link
+                to="/profile"
                 className={`nav-link profile-link ${isActive('/profile')}`}
                 onClick={closeMenu}
               >
@@ -95,7 +95,7 @@ export default function Header() {
                 <span>Mon Profil</span>
               </Link>
 
-              <button 
+              <button
                 onClick={handleLogout}
                 className="logout-btn"
                 aria-label="Se déconnecter"
@@ -106,16 +106,16 @@ export default function Header() {
             </div>
           ) : (
             <div className="auth-links" onClick={closeMenu}>
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className={`nav-link login-link ${location.pathname === '/login' ? 'active' : ''}`}
               >
                 <FiUser className="nav-icon" />
                 Connexion
               </Link>
 
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className={`nav-link register-link ${location.pathname === '/register' ? 'active' : ''}`}
               >
                 <FiStar className="nav-icon" />

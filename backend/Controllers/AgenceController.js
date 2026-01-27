@@ -57,14 +57,15 @@ const createAgence = async (req, res) => {
 
 const getMyAgence = async (req, res) => {
   try {
-    if (req.user.role !== 'agent') {
+    if (req.user.role !== 'agent' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Accès réservé aux agents'
+        message: 'Accès non autorisé'
       });
     }
 
-    const agences = await Agence.find({ agent: req.user._id });
+    const query = req.user.role === 'admin' ? {} : { agent: req.user._id };
+    const agences = await Agence.find(query).populate('agent', 'nom prenom email');
 
     res.status(200).json({
       success: true,
@@ -169,17 +170,18 @@ const approveAgence = async (req, res) => {
 
 const updateAgence = async (req, res) => {
   try {
-    if (req.user.role !== 'agent') {
+    if (req.user.role !== 'agent' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Accès réservé aux agents'
+        message: 'Accès non autorisé'
       });
     }
 
-    const agence = await Agence.findOne({
-      _id: req.params.id,
-      agent: req.user._id
-    });
+    const query = req.user.role === 'admin'
+      ? { _id: req.params.id }
+      : { _id: req.params.id, agent: req.user._id };
+
+    const agence = await Agence.findOne(query);
 
     if (!agence) {
       return res.status(404).json({
@@ -222,17 +224,18 @@ const updateAgence = async (req, res) => {
 
 const deleteAgence = async (req, res) => {
   try {
-    if (req.user.role !== 'agent') {
+    if (req.user.role !== 'agent' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Accès réservé aux agents'
+        message: 'Accès non autorisé'
       });
     }
 
-    const agence = await Agence.findOneAndDelete({
-      _id: req.params.id,
-      agent: req.user._id
-    });
+    const query = req.user.role === 'admin'
+      ? { _id: req.params.id }
+      : { _id: req.params.id, agent: req.user._id };
+
+    const agence = await Agence.findOneAndDelete(query);
 
     if (!agence) {
       return res.status(404).json({

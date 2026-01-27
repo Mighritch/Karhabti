@@ -81,8 +81,15 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.94) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .agence-form {
@@ -234,9 +241,20 @@
   text-transform: uppercase;
 }
 
-.status-badge.pending  { background: #ffaa00; color: #1a1a2e; }
-.status-badge.approved { background: #00cc99; color: #1a1a2e; }
-.status-badge.rejected { background: #ff4d4d; color: white; }
+.status-badge.pending {
+  background: #ffaa00;
+  color: #1a1a2e;
+}
+
+.status-badge.approved {
+  background: #00cc99;
+  color: #1a1a2e;
+}
+
+.status-badge.rejected {
+  background: #ff4d4d;
+  color: white;
+}
 
 .actions {
   margin-top: 1.2rem;
@@ -321,8 +339,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -350,4 +373,93 @@
   .btn-delete {
     flex: none;
   }
+}
+
+.btn-profile {
+  background: rgba(100, 108, 255, 0.1);
+  color: #a5b4fc;
+  border: 1px solid rgba(100, 108, 255, 0.2);
+}
+
+.btn-profile:hover {
+  background: rgba(100, 108, 255, 0.2);
+  border-color: #646cff;
+  color: white;
+}
+
+.agence-profile-modal {
+  width: 100%;
+  max-width: 440px;
+  background: #1a1a2e;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(100, 108, 255, 0.2);
+}
+
+.modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #646cff;
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+}
+
+.detail-item .label {
+  color: #888;
+  font-weight: 500;
+}
+
+.detail-item .value {
+  color: #eee;
+  font-weight: 600;
+  text-align: right;
+}
+
+.agent-info-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(100, 108, 255, 0.2);
+}
+
+.agent-info-section h3 {
+  color: #a5b4fc;
+  margin-bottom: 0.8rem;
+  font-size: 1.1rem;
+}
+
+.modal-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-footer .btn-submit {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
 }
