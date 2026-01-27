@@ -10,13 +10,17 @@ const {
   getMyVoitures,
   getMyMotos,
   deleteVoiture,
-  deleteMoto
+  deleteMoto,
+  suggestModels
 } = require('../Controllers/VehiculeController');
 
 const upload = require('../middleware/upload');
 
 // Toutes les routes nécessitent d'être connecté
 router.use(protect);
+
+// Suggestion de modèles via IA
+router.post('/suggest-models', requireApprovedAgency, suggestModels);
 
 // Routes réservées aux agents avec agence approuvée
 router.post('/voitures', upload.array('images', 5), requireApprovedAgency, createVoiture);

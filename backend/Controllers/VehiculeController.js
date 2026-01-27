@@ -1,6 +1,8 @@
 // controllers/VehiculeController.js
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
+const axios = require('axios');
+
 const { validationResult } = require('express-validator');
 
 const createVoiture = async (req, res) => {
@@ -196,11 +198,91 @@ const deleteMoto = async (req, res) => {
   }
 };
 
+const suggestModels = async (req, res) => {
+  try {
+    const { marque, type } = req.body;
+
+    if (!marque) {
+      return res.status(400).json({ success: false, message: 'La marque est requise' });
+    }
+
+    const prompt = `Donne-moi une liste de modèles populaires pour la marque de ${type || 'véhicule'} "${marque}". 
+    Réponds uniquement avec une liste de noms de modèles séparés par des virgules, sans texte supplémentaire, sans numérotation. 
+    Exemple pour Toyota: Corolla, Camry, RAV4, Yaris, Hilux`;
+
+    const getAIResponse = async (model) => {
+      return await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+        model: model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+        max_tokens: 100
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://karhabti.tn', // URL fictive mais propre pour OpenRouter
+          'X-Title': 'Karhabti'
+        },
+        timeout: 10000
+      });
+    };
+
+    // Liste de modèles gratuits à tester par ordre de préférence
+    const modelsToTry = [
+      "google/gemini-2.0-flash-exp:free",
+      "google/gemini-2.0-flash-lite-preview-02-05:free",
+      "deepseek/deepseek-chat", // Souvent très stable
+      "mistralai/mistral-7b-instruct:free",
+      "microsoft/phi-3-medium-128k-instruct:free"
+    ];
+
+    let response;
+    let lastError;
+
+    for (const model of modelsToTry) {
+      try {
+        console.log(`Tentative avec le modèle : ${model}`);
+        response = await getAIResponse(model);
+        if (response.data?.choices?.[0]?.message?.content) {
+          break; // Succès !
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`Le modèle ${model} a échoué. Tentative suivante...`);
+        // Petite attente de 500ms avant de changer de modèle pour éviter de spammer
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error('Tous les modèles IA ont échoué');
+    }
+
+    const content = response.data.choices[0].message.content;
+    const modeles = content.split(',').map(m => m.trim()).filter(m => m.length > 0);
+
+    res.status(200).json({
+      success: true,
+      data: modeles
+    });
+
+  } catch (error) {
+    console.error('Erreur suggestModels final:', error?.response?.data || error.message);
+    const errorMsg = error?.response?.data?.error?.message || error.message;
+    res.status(500).json({
+      success: false,
+      message: 'L\'IA est actuellement surchargée. Veuillez réessayer dans quelques secondes.',
+      error: errorMsg
+    });
+  }
+};
+
 module.exports = {
   createVoiture,
   createMoto,
   getMyVoitures,
   getMyMotos,
   deleteVoiture,
-  deleteMoto
+  deleteMoto,
+  suggestModels
 };
