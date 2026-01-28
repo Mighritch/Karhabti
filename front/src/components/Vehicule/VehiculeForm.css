@@ -1,5 +1,8 @@
 /* src/components/Vehicule/VehiculeForm.css */
 
+/* ============================================= */
+/* Conteneur principal du formulaire             */
+/* ============================================= */
 .vehicule-form-container {
   background: rgba(30, 30, 50, 0.9);
   padding: 2rem;
@@ -19,6 +22,9 @@
   gap: 0.8rem;
 }
 
+/* ============================================= */
+/* Groupes de champs                             */
+/* ============================================= */
 .form-group {
   margin-bottom: 1.2rem;
 }
@@ -40,6 +46,9 @@
   font-size: 1rem;
 }
 
+/* ============================================= */
+/* Boutons d'action principal                    */
+/* ============================================= */
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -71,6 +80,9 @@
   cursor: not-allowed;
 }
 
+/* ============================================= */
+/* Messages d'erreur                             */
+/* ============================================= */
 .form-error {
   background: rgba(255, 107, 107, 0.2);
   color: #ff6b6b;
@@ -80,7 +92,9 @@
   text-align: center;
 }
 
-/* Styles pour le champ d'information statique (permis B pour voiture) */
+/* ============================================= */
+/* Champs informatifs statiques (ex: permis B)   */
+/* ============================================= */
 .info-field {
   margin-bottom: 1.2rem;
 }
@@ -94,7 +108,9 @@
   font-weight: 500;
 }
 
-/* Image Upload Styling */
+/* ============================================= */
+/* Zone d'upload des images                      */
+/* ============================================= */
 .upload-area {
   border: 2px dashed rgba(100, 108, 255, 0.4);
   border-radius: 12px;
@@ -169,7 +185,9 @@
   background: rgba(255, 0, 0, 1);
 }
 
-/* AI Suggestions Styling */
+/* ============================================= */
+/* Suggestions de modèles (marque → modèles)     */
+/* ============================================= */
 .input-with-action {
   display: flex;
   gap: 0.5rem;
@@ -212,8 +230,14 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .suggestions-header {
@@ -255,11 +279,75 @@
   padding-left: 1.5rem;
 }
 
+/* ============================================= */
+/* Panneau des suggestions IA (analyse image)    */
+/* ============================================= */
+.ai-suggestions-panel {
+  background: rgba(100, 108, 255, 0.15);
+  border: 1px dashed #646cff;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.ai-suggestions-panel h4 {
+  margin: 0 0 0.8rem 0;
+  color: #a5b4fc;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.suggestions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.suggestion-chip {
+  background: #1e1e32;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.suggestion-chip:hover {
+  background: #646cff;
+  border-color: #646cff;
+  transform: translateY(-2px);
+}
+
+.btn-clear-ai {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: #ff4d4d;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ============================================= */
+/* Spinner d'animation                           */
+/* ============================================= */
 .spin {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -35,6 +35,10 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Servir les fichiers statiques
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// ou plus simplement (si déjà public est servi) :
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
@@ -64,9 +68,7 @@ app.use((err, req, res, next) => {
       message: err.message || 'Erreur serveur interne',
       ...(req.app.get('env') === 'development' && { stack: err.stack })
     });
-  } 
-
-  else {
+  } else {
     res.render('error');
   }
 });
