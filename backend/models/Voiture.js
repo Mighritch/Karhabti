@@ -128,6 +128,11 @@ const voitureSchema = new mongoose.Schema({
     default: 'B',
     required: true
   },
+ prix: {
+    type: Number,
+    required: [true, 'Veuillez entrer le prix en Dinars Tunisiens (TND)'],
+    min: [0, 'Le prix doit être positif'],
+  },
   images: [{
     url: String,
     nomFichier: String

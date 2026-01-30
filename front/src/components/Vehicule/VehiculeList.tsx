@@ -1,3 +1,4 @@
+// VehiculeList.tsx
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +18,7 @@ interface Vehicule {
   couleur: string;
   etat: 'neuf' | 'occasion';
   motorisation: string;
+  prix: number;
   createdAt: string;
 }
 
@@ -27,7 +29,12 @@ interface VehiculeListProps {
   onAddClick: () => void;
 }
 
-export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddClick }: VehiculeListProps) {
+export default function VehiculeList({
+  agenceId,
+  typeVehicule,
+  onClose,
+  onAddClick,
+}: VehiculeListProps) {
   const { token } = useAuth();
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +44,7 @@ export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddCli
   const getImageUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    const baseUrl = 'http://localhost:5000';
+    const baseUrl = 'http://localhost:5000'; // ← à adapter en prod (ou via variable d'env)
     return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
@@ -47,7 +54,7 @@ export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddCli
       const endpoint = typeVehicule === 'voiture' ? '/vehicules/me/voitures' : '/vehicules/me/motos';
       const res = await api.get(endpoint, {
         params: { agenceId },
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
         setVehicules(res.data.data);
@@ -69,9 +76,9 @@ export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddCli
     try {
       await api.delete(`/vehicules/${typeVehicule}s/${id}`, {
         params: { agenceId },
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setVehicules(prev => prev.filter(v => v._id !== id));
+      setVehicules((prev) => prev.filter((v) => v._id !== id));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Erreur lors de la suppression');
     }
@@ -88,14 +95,16 @@ export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddCli
           <button className="btn-add-inline" onClick={onAddClick}>
             <FaPlus /> Ajouter
           </button>
-          <button className="btn-close" onClick={onClose}>×</button>
+          <button className="btn-close" onClick={onClose}>
+            ×
+          </button>
         </div>
       </div>
 
       <div className="search-bar-container">
         <input
           type="text"
-          placeholder="Rechercher par marque, modèle ou type..."
+          placeholder="Rechercher par marque, modèle, type ou immat..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
@@ -118,38 +127,65 @@ export default function VehiculeList({ agenceId, typeVehicule, onClose, onAddCli
       ) : (
         <div className="vehicule-grid">
           {vehicules
-            .filter(v => {
+            .filter((v) => {
               const search = searchTerm.toLowerCase();
-              const type = v.categorie || v.typeMoto || "";
+              const type = v.categorie || v.typeMoto || '';
               return (
                 v.marque.toLowerCase().includes(search) ||
                 v.modele.toLowerCase().includes(search) ||
-                type.toLowerCase().includes(search)
+                type.toLowerCase().includes(search) ||
+                (v.immatriculation && v.immatriculation.toLowerCase().includes(search))
               );
             })
-            .map(v => (
+            .map((v) => (
               <div key={v._id} className="vehicule-card">
                 <div className="vehicule-image">
                   {v.images && v.images.length > 0 ? (
-                    <img src={getImageUrl(v.images[0].url)} alt={v.marque} />
+                    <img src={getImageUrl(v.images[0].url)} alt={`${v.marque} ${v.modele}`} />
                   ) : (
                     <div className="no-image">Pas d'image</div>
                   )}
                 </div>
+
                 <div className="vehicule-info">
-                  <h3>{v.marque} {v.modele}</h3>
+                  <h3>
+                    {v.marque} {v.modele}
+                  </h3>
+
                   <p className="v-meta">
-                    <span>Année: <strong>{v.annee}</strong></span>
-                    <span>Immat: <strong>{v.immatriculation}</strong></span>
+                    <span>
+                      Année: <strong>{v.annee}</strong>
+                    </span>
+                    <span>
+                      Immat: <strong>{v.immatriculation || '—'}</strong>
+                    </span>
                   </p>
+
                   <p className="v-meta">
-                    <span>KM: <strong>{v.kilometrage?.toLocaleString() || 0}</strong></span>
-                    <span>Type: <strong>{v.categorie || v.typeMoto}</strong></span>
+                    <span>
+                      KM: <strong>{v.kilometrage?.toLocaleString('fr-TN') || '—'}</strong>
+                    </span>
+                    <span>
+                      Type: <strong>{v.categorie || v.typeMoto || '—'}</strong>
+                    </span>
                   </p>
+
+                  <p className="v-meta price-line">
+                    <span>
+                      Prix: <strong>{v.prix.toLocaleString('fr-TN')} TND</strong>
+                    </span>
+                  </p>
+
+                  <p
+                    className="v-meta price-context"
+                    style={{ fontSize: '0.82rem', color: '#777', marginTop: '-4px' }}
+                  >
+                    {v.etat === 'neuf' ? '(prix neuf indicatif)' : '(prix occasion marché)'}
+                  </p>
+
                   <div className="card-actions">
-                    {/* Seul le bouton supprimer reste */}
-                    <button 
-                      className="btn-delete" 
+                    <button
+                      className="btn-delete"
                       style={{ flex: 1 }}
                       onClick={() => handleDelete(v._id)}
                     >
