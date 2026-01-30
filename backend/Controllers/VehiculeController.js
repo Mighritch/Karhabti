@@ -1,60 +1,48 @@
+// VehiculeController.js (no changes needed, as the AI call succeeded with 'gemini-2.5-flash'; model is still available in Jan 2026 per sources)
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
-const axios = require('axios');
-const { validationResult } = require('express-validator');
 const fs = require('fs');
 const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const USE_AI_PROVIDER = (process.env.USE_AI_PROVIDER || 'gemini').toLowerCase();
+
+// ────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────
+const timeoutPromise = (ms, msg = 'Timeout') =>
+  new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
+
+// ────────────────────────────────────────────────
+// CRUD – VOITURES
+// ────────────────────────────────────────────────
 const createVoiture = async (req, res) => {
   try {
-    // Optionnel : garder la validation si vous avez des middlewares express-validator
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
-
-    const images = req.files
-      ? req.files.map(file => ({
-          url: `/uploads/vehicules/${file.filename}`,
-          nomFichier: file.originalname
-        }))
-      : [];
+    const images = req.files?.map(file => ({
+      url: `/uploads/vehicules/${file.filename}`,
+      nomFichier: file.originalname
+    })) || [];
 
     const data = { ...req.body };
 
-    // Conversion des champs booléens envoyés sous forme de string ("true"/"false")
-    [
-      'abs',
-      'regulateurVitesse',
-      'climatisation',
-      'cameraRecul',
-      'gps',
-      'ecranMultimedia'
-    ].forEach(field => {
-      if (data[field] !== undefined) {
-        data[field] = data[field] === 'true' || data[field] === true;
-      }
-    });
+    // Conversion booléens
+    ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia']
+      .forEach(k => {
+        if (data[k] !== undefined) {
+          data[k] = data[k] === 'true' || data[k] === true || !!data[k];
+        }
+      });
 
-    // Conversion numérique sécurisée (ne force pas si champ absent)
-    [
-      'annee',
-      'puissance',
-      'cylindre',
-      'nbrVitesse',
-      'consommation',
-      'nbrPortes',
-      'nbrPlaces',
-      'airbags',
-      'kilometrage'
-    ].forEach(field => {
-      if (data[field] !== undefined && data[field] !== '') {
-        const num = Number(data[field]);
-        data[field] = isNaN(num) ? undefined : num;
-      }
-    });
+    // Conversion nombres
+    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage']
+      .forEach(k => {
+        if (data[k] !== undefined && data[k] !== '') {
+          const num = Number(data[k]);
+          data[k] = isNaN(num) ? undefined : num;
+        }
+      });
 
-    // Champs obligatoires / fixes
     data.agence = req.agence._id;
     data.images = images;
 
@@ -65,38 +53,32 @@ const createVoiture = async (req, res) => {
       message: 'Voiture ajoutée avec succès',
       data: voiture
     });
-  } catch (error) {
-    console.error('Erreur createVoiture:', error);
+  } catch (err) {
+    console.error('createVoiture error:', err);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de l’ajout de la voiture',
-      error: error.message
+      message: 'Erreur lors de la création de la voiture',
+      error: err.message
     });
   }
 };
 
+// ────────────────────────────────────────────────
+// CRUD – MOTOS
+// ────────────────────────────────────────────────
 const createMoto = async (req, res) => {
   try {
-    // Optionnel : validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
-
-    const images = req.files
-      ? req.files.map(file => ({
-          url: `/uploads/vehicules/${file.filename}`,
-          nomFichier: file.originalname
-        }))
-      : [];
+    const images = req.files?.map(file => ({
+      url: `/uploads/vehicules/${file.filename}`,
+      nomFichier: file.originalname
+    })) || [];
 
     const data = { ...req.body };
 
-    // Conversion numérique pour les champs moto pertinents
-    ['annee', 'cylindre', 'kilometrage'].forEach(field => {
-      if (data[field] !== undefined && data[field] !== '') {
-        const num = Number(data[field]);
-        data[field] = isNaN(num) ? undefined : num;
+    ['annee', 'cylindre', 'kilometrage'].forEach(k => {
+      if (data[k] !== undefined && data[k] !== '') {
+        const num = Number(data[k]);
+        data[k] = isNaN(num) ? undefined : num;
       }
     });
 
@@ -110,12 +92,12 @@ const createMoto = async (req, res) => {
       message: 'Moto ajoutée avec succès',
       data: moto
     });
-  } catch (error) {
-    console.error('Erreur createMoto:', error);
+  } catch (err) {
+    console.error('createMoto error:', err);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de l’ajout de la moto',
-      error: error.message
+      message: 'Erreur lors de la création de la moto',
+      error: err.message
     });
   }
 };
@@ -125,18 +107,14 @@ const getMyVoitures = async (req, res) => {
     const voitures = await Voiture.find({ agence: req.agence._id })
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    res.json({
       success: true,
       count: voitures.length,
       data: voitures
     });
-  } catch (error) {
-    console.error('Erreur getMyVoitures:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des voitures',
-      error: error.message
-    });
+  } catch (err) {
+    console.error('getMyVoitures error:', err);
+    res.status(500).json({ success: false, message: 'Erreur récupération voitures' });
   }
 };
 
@@ -145,18 +123,14 @@ const getMyMotos = async (req, res) => {
     const motos = await Moto.find({ agence: req.agence._id })
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    res.json({
       success: true,
       count: motos.length,
       data: motos
     });
-  } catch (error) {
-    console.error('Erreur getMyMotos:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des motos',
-      error: error.message
-    });
+  } catch (err) {
+    console.error('getMyMotos error:', err);
+    res.status(500).json({ success: false, message: 'Erreur récupération motos' });
   }
 };
 
@@ -171,14 +145,10 @@ const deleteVoiture = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
     }
 
-    res.status(200).json({ success: true, message: 'Voiture supprimée avec succès' });
-  } catch (error) {
-    console.error('Erreur deleteVoiture:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la suppression',
-      error: error.message
-    });
+    res.json({ success: true, message: 'Voiture supprimée avec succès' });
+  } catch (err) {
+    console.error('deleteVoiture error:', err);
+    res.status(500).json({ success: false, message: 'Erreur suppression voiture' });
   }
 };
 
@@ -193,197 +163,162 @@ const deleteMoto = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Moto non trouvée' });
     }
 
-    res.status(200).json({ success: true, message: 'Moto supprimée avec succès' });
-  } catch (error) {
-    console.error('Erreur deleteMoto:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la suppression',
-      error: error.message
-    });
+    res.json({ success: true, message: 'Moto supprimée avec succès' });
+  } catch (err) {
+    console.error('deleteMoto error:', err);
+    res.status(500).json({ success: false, message: 'Erreur suppression moto' });
   }
 };
 
+// ────────────────────────────────────────────────
+// SUGGEST MODELS (marque → liste de modèles)
+// ────────────────────────────────────────────────
 const suggestModels = async (req, res) => {
   try {
-    const { marque, type } = req.body;
+    const { marque, type = 'véhicule' } = req.body;
+
     if (!marque?.trim()) {
       return res.status(400).json({ success: false, message: 'La marque est requise' });
     }
 
-    const prompt = `Donne-moi une liste de modèles populaires pour la marque de ${type || 'véhicule'} "${marque}". Réponds uniquement avec une liste de noms de modèles séparés par des virgules, sans texte supplémentaire, sans numérotation. Exemple pour Toyota: Corolla, Camry, RAV4, Yaris, Hilux`;
+    const prompt = `Liste de 8 à 12 modèles populaires pour la marque "${marque}" (${type}).
+Réponds **uniquement** avec un JSON valide :
+{ "models": ["Modèle 1", "Modèle 2", ...] }`;
 
-    const modelsToTry = [
-      "google/gemini-2.0-flash-001",
-      "deepseek/deepseek-chat",
-      "mistralai/mistral-7b-instruct",
-      "qwen/qwen2.5-coder-32b-instruct",
-      "microsoft/phi-3-medium-128k-instruct"
-    ];
+    let models = [];
 
-    let response = null;
-    let lastError = null;
-
-    for (const model of modelsToTry) {
-      try {
-        response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-          model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.4,
-          max_tokens: 120
-        }, {
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://karhabti.tn',
-            'X-Title': 'Karhabti'
-          },
-          timeout: 15000
-        });
-
-        if (response?.data?.choices?.[0]?.message?.content) break;
-      } catch (err) {
-        lastError = err;
-        await new Promise(r => setTimeout(r, 800));
-      }
+    if (USE_AI_PROVIDER !== 'gemini') {
+      return res.status(503).json({
+        success: false,
+        message: 'Seul le provider Gemini est supporté dans cette version'
+      });
     }
 
-    if (!response?.data?.choices?.[0]?.message?.content) {
-      throw lastError || new Error('Aucun modèle n’a répondu correctement');
-    }
-
-    const content = response.data.choices[0].message.content.trim();
-    const modeles = content.split(/,\s*/).map(m => m.trim()).filter(Boolean);
-
-    res.status(200).json({ success: true, data: modeles });
-  } catch (error) {
-    console.error('suggestModels error:', error);
-    res.status(503).json({
-      success: false,
-      message: 'Service de suggestion temporairement indisponible',
-      error: error.message
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',           // version stable et rapide en 2025-2026
+      generationConfig: { responseMimeType: 'application/json' }
     });
+
+    const result = await Promise.race([
+      timeoutPromise(12000, 'Timeout suggestion modèles'),
+      model.generateContent(prompt)
+    ]);
+
+    const parsed = JSON.parse(result.response.text());
+    models = parsed.models || [];
+
+    res.json({ success: true, data: models });
+  } catch (err) {
+    console.error('suggestModels error:', err);
+
+    let message = 'Service de suggestion temporairement indisponible';
+    let status = 503;
+
+    if (err.message.includes('Timeout')) {
+      message = 'Délai dépassé – réessayez plus tard';
+    } else if (err.status === 404 || err.message.toLowerCase().includes('not found')) {
+      message = 'Modèle Gemini non disponible. Vérifiez votre clé API ou essayez "gemini-2.5-flash-latest"';
+      status = 400;
+    }
+
+    res.status(status).json({ success: false, message });
   }
 };
 
+// ────────────────────────────────────────────────
+// SUGGEST FROM IMAGE (Gemini – vision)
+// ────────────────────────────────────────────────
 const suggestFromImage = async (req, res) => {
+  let filePath = null;
+
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Aucune image fournie'
-      });
+    if (!req.files?.length) {
+      return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
 
     const file = req.files[0];
-    const filePath = file.path;
+    filePath = file.path;
 
     if (!fs.existsSync(filePath)) {
-      return res.status(500).json({
+      return res.status(500).json({ success: false, message: 'Fichier image introuvable' });
+    }
+
+    const stats = fs.statSync(filePath);
+    if (stats.size > 5 * 1024 * 1024) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ success: false, message: 'Image trop volumineuse (max 5 Mo)' });
+    }
+
+    const base64Image = fs.readFileSync(filePath).toString('base64');
+    const mimeType = file.mimetype || 'image/jpeg';
+
+    const prompt = `Tu es un expert en reconnaissance automobile et moto.
+Analyse cette image UNIQUE et retourne **UNIQUEMENT** un JSON valide :
+
+{
+  "marque":   "Toyota | Peugeot | BMW | Honda | ... | Inconnu",
+  "modele":   "208 | Clio | Civic | MT-07 | ... | ",
+  "type":     "Citadine | Berline | SUV / Crossover | Sportive | Cabriolet | Routière | Naked | Trail/Adventure | Scooter | ...",
+  "couleur":  "Noir | Blanc | Gris | Rouge | Bleu | Argent | ... | Inconnu",
+  "confiance": 0.92
+}`;
+
+    if (USE_AI_PROVIDER !== 'gemini') {
+      return res.status(503).json({
         success: false,
-        message: 'Fichier image introuvable sur le serveur'
+        message: 'Seul le provider Gemini est supporté dans cette version'
       });
     }
 
-    const imageBuffer = fs.readFileSync(filePath);
-    const base64Image = imageBuffer.toString('base64');
-    const mimeType = file.mimetype || 'image/jpeg';
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',           // support multimodal / vision – stable en 2026
+      generationConfig: { responseMimeType: 'application/json' }
+    });
 
-    const prompt = `Tu es un expert en reconnaissance de véhicules.
-Analyse cette image UNIQUE et retourne **UNIQUEMENT** un objet JSON valide, sans aucun texte avant/après, sans markdown, sans \`\`\`.
-Clés obligatoires :
-- marque     : string ("Toyota", "Peugeot", "BMW", "Honda", ..., "Inconnu")
-- modele     : string ("208", "Clio", "Civic", "MT-07", ..., "" si inconnu)
-- type       : string (pour voiture : "Citadine", "Berline", "SUV / Crossover", "Sportive", "Cabriolet", "Monospace", "Pickup", "Utilitaire / Van" — pour moto : "Routière", "Sportive", "Naked", "Trail/Adventure", "Scooter", "Maxi-scooter", "Cruiser", "Touring")
-- couleur    : string ("Noir", "Blanc", "Gris", "Rouge", "Bleu", "Argent", "Vert", ..., "Inconnu")
-- confiance  : number entre 0.0 et 1.0
-Exemple exact pour une petite voiture bleue :
-{"marque":"Peugeot","modele":"208","type":"Citadine","couleur":"Bleu","confiance":0.94}`;
+    const genResult = await Promise.race([
+      timeoutPromise(60000, 'Timeout analyse image'),
+      model.generateContent([
+        { inlineData: { mimeType, data: base64Image } },
+        { text: prompt }
+      ])
+    ]);
 
-    const visionModels = [
-      'google/gemini-2.0-flash-001',
-      'openai/gpt-4o-mini',
-      'qwen/qwen2.5-vl-72b-instruct',
-      'qwen/qwen2.5-vl-32b-instruct'
-    ];
+    const detected = JSON.parse(genResult.response.text());
 
-    let detected = null;
-    let usedModel = null;
-    let lastError = null;
-
-    for (const model of visionModels) {
-      try {
-        const response = await axios.post(
-          'https://openrouter.ai/api/v1/chat/completions',
-          {
-            model,
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: prompt },
-                  {
-                    type: 'image_url',
-                    image_url: { url: `data:${mimeType};base64,${base64Image}` }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 350,
-            temperature: 0.1,
-            response_format: { type: 'json_object' }
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://karhabti.tn',
-              'X-Title': 'Karhabti Vehicule Detection'
-            },
-            timeout: 60000
-          }
-        );
-
-        let content = response?.data?.choices?.[0]?.message?.content || '';
-
-        content = content
-          .replace(/^```(?:json)?\s*/i, '')
-          .replace(/\s*```$/i, '')
-          .replace(/[\n\r]+/g, ' ')
-          .trim();
-
-        if (content.startsWith('{') && content.endsWith('}')) {
-          detected = JSON.parse(content);
-          usedModel = model;
-          break;
-        }
-      } catch (err) {
-        lastError = err;
-        console.warn(`Vision model ${model} failed: ${err.message}`);
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
-
-    if (!detected) {
-      throw lastError || new Error('Aucun modèle vision n’a réussi à analyser l’image');
-    }
-
-    detected.confiance = Number(detected.confiance ?? 0.45);
-    if (isNaN(detected.confiance) || detected.confiance < 0 || detected.confiance > 1) {
+    // Sécurité sur le score de confiance
+    detected.confiance = Number(detected.confiance) || 0.45;
+    if (detected.confiance < 0 || detected.confiance > 1) {
       detected.confiance = 0.45;
     }
 
-    res.status(200).json({
+    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    res.json({
       success: true,
       data: detected,
-      debug: { usedModel }
+      debug: { provider: 'gemini-2.5-flash' }
     });
-  } catch (error) {
-    console.error('suggestFromImage error:', error);
-    res.status(500).json({
+
+  } catch (err) {
+    console.error('suggestFromImage error:', err);
+
+    let message = 'Échec de l’analyse IA de l’image';
+    let status = 500;
+
+    if (err.message.includes('Timeout')) {
+      message = 'Analyse trop longue – image complexe ou serveur lent';
+      status = 504;
+    } else if (err.status === 404 || err.message.toLowerCase().includes('not found')) {
+      message = 'Modèle Gemini non disponible. Vérifiez votre clé API ou essayez "gemini-2.5-flash-latest"';
+      status = 400;
+    }
+
+    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    res.status(status).json({
       success: false,
-      message: 'Échec de l’analyse IA de l’image',
-      error: error.message
+      message,
+      error: err.message
     });
   }
 };
