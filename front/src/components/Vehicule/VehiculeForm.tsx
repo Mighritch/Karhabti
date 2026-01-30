@@ -1,4 +1,4 @@
-// VehiculeForm.tsx (corrected: added missing fields for 'cylindre' and 'consommation' in voiture section to match required model fields)
+// VehiculeForm.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -45,6 +45,7 @@ interface VehiculeFormData {
   typeMoto?: string;
   typeTransmission?: string;
   typePermis?: string;
+  prix?: number;
   [key: string]: any;
 }
 
@@ -79,6 +80,7 @@ export default function VehiculeForm({
     airbags: 2,
     typePermis: typeVehicule === 'voiture' ? 'B' : 'A',
     typeTransmission: typeVehicule === 'moto' ? 'Chaîne' : undefined,
+    prix: undefined,          // ← pas de valeur par défaut forcée
   });
 
   const [images, setImages] = useState<VehiculeImage[]>([]);
@@ -87,7 +89,7 @@ export default function VehiculeForm({
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
 
-  // Nettoyage des previews URL pour éviter les fuites mémoire
+  // Nettoyage des object URLs
   useEffect(() => {
     return () => {
       images.forEach((img) => URL.revokeObjectURL(img.preview));
@@ -95,7 +97,7 @@ export default function VehiculeForm({
   }, [images]);
 
   // ────────────────────────────────────────────────
-  //               Analyse IA (version améliorée)
+  //               Analyse IA
   // ────────────────────────────────────────────────
   const handleMagicAI = async () => {
     if (images.length === 0 || analyzing) return;
@@ -113,7 +115,7 @@ export default function VehiculeForm({
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 95000, // 95 secondes — aligné avec le timeout serveur ~90s
+        timeout: 95000,
       });
 
       if (res.data.success) {
@@ -121,7 +123,7 @@ export default function VehiculeForm({
         const confiance = res.data.data.confiance || 0;
         if (confiance < 0.60) {
           setError(
-            `Détection peu fiable (${Math.round(confiance * 100)}%) – vérifiez et corrigez manuellement`
+            `Détection peu fiable (${Math.round(confiance * 100)}%) – vérifiez manuellement`
           );
         }
       } else {
@@ -145,9 +147,12 @@ export default function VehiculeForm({
     let targetField = field;
     let targetValue = value;
 
-    // Mapping intelligent selon le type de véhicule
+    // Mapping intelligent
     if (field === 'type') {
       targetField = typeVehicule === 'voiture' ? 'categorie' : 'typeMoto';
+    } else if (field === 'prixEstime') {
+      targetField = 'prix';
+      targetValue = Number(value) || 0;
     }
 
     setFormData((prev) => ({
@@ -157,7 +162,7 @@ export default function VehiculeForm({
   };
 
   // ────────────────────────────────────────────────
-  //               Gestion des images
+  //               Gestion images
   // ────────────────────────────────────────────────
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -222,6 +227,8 @@ export default function VehiculeForm({
 
       if (res.data.success) {
         onSuccess();
+      } else {
+        setError(res.data.message || 'Erreur inattendue du serveur');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors de l’ajout du véhicule');
@@ -243,28 +250,42 @@ export default function VehiculeForm({
       {error && <div className="form-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="grid-form">
-        {/* Panneau IA */}
+        {/* Panneau IA suggestions */}
         {aiSuggestions && (
           <div className="ai-suggestions-panel">
-            <h3>Suggestions IA <FaRobot /></h3>
-            <p>Confiance : {Math.round((aiSuggestions.confiance || 0) * 100)}%</p>
-            <div className="suggestions-grid">
-              {Object.entries(aiSuggestions).map(([key, value]) => {
-                if (key === 'confiance') return null;
-                return (
-                  <div key={key} className="suggestion-item">
-                    <span>{key.charAt(0).toUpperCase() + key.slice(1)} : {value}</span>
-                    <button
-                      type="button"
-                      className="apply-btn"
-                      onClick={() => applySuggestion(key, value)}
-                    >
-                      <FaCheckCircle /> Appliquer
-                    </button>
+            <h3>
+              <FaRobot /> Suggestions IA
+              <span className="confiance">
+                Confiance : {Math.round((aiSuggestions.confiance || 0) * 100)}%
+              </span>
+            </h3>
+
+            <div className="suggestions-chips">
+              {Object.entries(aiSuggestions).map(([key, value]) =>
+                key !== 'confiance' && value && value !== 'Inconnu' ? (
+                  <div
+                    key={key}
+                    className="suggestion-chip"
+                    onClick={() => applySuggestion(key, value)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {key === 'prixEstime'
+                      ? `Prix estimé : ${Number(value).toLocaleString('fr-TN')} TND`
+                      : `${key.charAt(0).toUpperCase() + key.slice(1)} : ${value}`}
+                    <FaCheckCircle className="check-icon" />
                   </div>
-                );
-              })}
+                ) : null
+              )}
             </div>
+
+            <button
+              type="button"
+              className="btn-clear-ai"
+              onClick={() => setAiSuggestions(null)}
+            >
+              Ignorer suggestions
+            </button>
           </div>
         )}
 
@@ -312,13 +333,14 @@ export default function VehiculeForm({
             </div>
 
             <div className="form-group">
-              <label>Couleur</label>
+              <label>Couleur *</label>
               <input
                 type="text"
                 name="couleur"
                 value={formData.couleur || ''}
                 onChange={handleChange}
-                placeholder="Blanc, Rouge..."
+                placeholder="Blanc, Rouge, Gris..."
+                required
               />
             </div>
           </div>
@@ -333,7 +355,7 @@ export default function VehiculeForm({
             </div>
 
             <div className="form-group">
-              <label>Kilométrage</label>
+              <label>Kilométrage (km)</label>
               <input
                 type="number"
                 name="kilometrage"
@@ -341,6 +363,23 @@ export default function VehiculeForm({
                 onChange={handleChange}
                 min={0}
               />
+            </div>
+
+            <div className="form-group">
+              <label>Prix en TND *</label>
+              <input
+                type="number"
+                name="prix"
+                value={formData.prix ?? ''}
+                onChange={handleChange}
+                min={0}
+                step={500}
+                placeholder="Exemple : 45800"
+                required
+              />
+              <small style={{ color: '#aaa', fontSize: '0.85rem', display: 'block', marginTop: '4px' }}>
+                Prix en Dinars Tunisiens (TND)
+              </small>
             </div>
           </div>
 
@@ -352,42 +391,46 @@ export default function VehiculeForm({
                 name="immatriculation"
                 value={formData.immatriculation || ''}
                 onChange={handleChange}
-                placeholder="AA-123-BB"
+                placeholder="ex: 123 TUN 456 | AA-123-BB"
               />
             </div>
           </div>
 
-          {typeVehicule === 'voiture' ? (
-            <div className="form-group">
-              <label>Catégorie</label>
-              <select name="categorie" value={formData.categorie || ''} onChange={handleChange}>
-                <option value="">Sélectionnez...</option>
-                <option value="Citadine">Citadine</option>
-                <option value="Berline">Berline</option>
-                <option value="SUV / Crossover">SUV / Crossover</option>
-                <option value="Sportive">Sportive</option>
-                <option value="Cabriolet">Cabriolet</option>
-                <option value="Monospace">Monospace</option>
-                <option value="Pickup">Pickup</option>
-                <option value="Utilitaire / Van">Utilitaire / Van</option>
-              </select>
-            </div>
-          ) : (
-            <div className="form-group">
-              <label>Type de moto</label>
-              <select name="typeMoto" value={formData.typeMoto || ''} onChange={handleChange}>
-                <option value="">Sélectionnez...</option>
-                <option value="Routière">Routière</option>
-                <option value="Sportive">Sportive</option>
-                <option value="Naked">Naked</option>
-                <option value="Trail/Adventure">Trail/Adventure</option>
-                <option value="Scooter">Scooter</option>
-                <option value="Maxi-scooter">Maxi-scooter</option>
-                <option value="Cruiser">Cruiser</option>
-                <option value="Touring">Touring</option>
-              </select>
-            </div>
-          )}
+          {/* Catégorie / Type moto */}
+          <div className="form-group">
+            <label>{typeVehicule === 'voiture' ? 'Catégorie' : 'Type de moto'} *</label>
+            <select
+              name={typeVehicule === 'voiture' ? 'categorie' : 'typeMoto'}
+              value={formData[typeVehicule === 'voiture' ? 'categorie' : 'typeMoto'] || ''}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Sélectionnez...</option>
+              {typeVehicule === 'voiture' ? (
+                <>
+                  <option value="Citadine">Citadine</option>
+                  <option value="Berline">Berline</option>
+                  <option value="SUV / Crossover">SUV / Crossover</option>
+                  <option value="Sportive">Sportive</option>
+                  <option value="Cabriolet">Cabriolet</option>
+                  <option value="Monospace">Monospace</option>
+                  <option value="Pickup">Pickup</option>
+                  <option value="Utilitaire / Van">Utilitaire / Van</option>
+                </>
+              ) : (
+                <>
+                  <option value="Routière">Routière</option>
+                  <option value="Sportive">Sportive</option>
+                  <option value="Naked">Naked</option>
+                  <option value="Trail/Adventure">Trail/Adventure</option>
+                  <option value="Scooter">Scooter</option>
+                  <option value="Maxi-scooter">Maxi-scooter</option>
+                  <option value="Cruiser">Cruiser</option>
+                  <option value="Touring">Touring</option>
+                </>
+              )}
+            </select>
+          </div>
         </section>
 
         {/* Section 2 – Spécifications techniques */}
@@ -418,19 +461,20 @@ export default function VehiculeForm({
           </div>
 
           <div className="form-row">
+            <div className="form-group">
+              <label>Puissance (ch/kW) *</label>
+              <input
+                type="number"
+                name="puissance"
+                value={formData.puissance ?? ''}
+                onChange={handleChange}
+                min={0}
+                required
+              />
+            </div>
+
             {typeVehicule === 'voiture' ? (
               <>
-                <div className="form-group">
-                  <label>Puissance (ch/kW) *</label>
-                  <input
-                    type="number"
-                    name="puissance"
-                    value={formData.puissance ?? ''}
-                    onChange={handleChange}
-                    min={0}
-                    required
-                  />
-                </div>
                 <div className="form-group">
                   <label>Cylindrée (cc) *</label>
                   <input
@@ -468,22 +512,22 @@ export default function VehiculeForm({
                 />
               </div>
             )}
-
-            {typeVehicule === 'moto' && (
-              <div className="form-group">
-                <label>Transmission</label>
-                <select
-                  name="typeTransmission"
-                  value={formData.typeTransmission || ''}
-                  onChange={handleChange}
-                >
-                  <option value="Chaîne">Chaîne</option>
-                  <option value="Courroie">Courroie</option>
-                  <option value="Arbre">Arbre</option>
-                </select>
-              </div>
-            )}
           </div>
+
+          {typeVehicule === 'moto' && (
+            <div className="form-group">
+              <label>Transmission</label>
+              <select
+                name="typeTransmission"
+                value={formData.typeTransmission || ''}
+                onChange={handleChange}
+              >
+                <option value="Chaîne">Chaîne</option>
+                <option value="Courroie">Courroie</option>
+                <option value="Arbre">Arbre</option>
+              </select>
+            </div>
+          )}
 
           {typeVehicule === 'voiture' && (
             <div className="form-row">
@@ -513,7 +557,7 @@ export default function VehiculeForm({
           )}
         </section>
 
-        {/* Section 3 – Équipements & Confort (voiture uniquement) */}
+        {/* Équipements & Confort – voiture uniquement */}
         {typeVehicule === 'voiture' && (
           <section className="form-section">
             <h3>Équipements & Confort</h3>
@@ -540,7 +584,7 @@ export default function VehiculeForm({
           </section>
         )}
 
-        {/* Section Photos + Bouton IA */}
+        {/* Photos + IA */}
         <section className="form-section">
           <h3>Photos (max 5) – IA sur la première photo</h3>
           <div className="upload-area">
@@ -591,7 +635,7 @@ export default function VehiculeForm({
           )}
         </section>
 
-        {/* Boutons d'action */}
+        {/* Actions */}
         <div className="form-actions">
           <button type="button" className="btn-cancel" onClick={onCancel}>
             Annuler

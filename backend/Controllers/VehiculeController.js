@@ -35,7 +35,7 @@ const createVoiture = async (req, res) => {
       });
 
     // Conversion nombres
-    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage']
+    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix'] // MODIF: Ajout pour prix
       .forEach(k => {
         if (data[k] !== undefined && data[k] !== '') {
           const num = Number(data[k]);
@@ -75,12 +75,13 @@ const createMoto = async (req, res) => {
 
     const data = { ...req.body };
 
-    ['annee', 'cylindre', 'kilometrage'].forEach(k => {
-      if (data[k] !== undefined && data[k] !== '') {
-        const num = Number(data[k]);
-        data[k] = isNaN(num) ? undefined : num;
-      }
-    });
+    ['annee', 'cylindre', 'kilometrage', 'prix'] // MODIF: Ajout pour prix
+      .forEach(k => {
+        if (data[k] !== undefined && data[k] !== '') {
+          const num = Number(data[k]);
+          data[k] = isNaN(num) ? undefined : num;
+        }
+      });
 
     data.agence = req.agence._id;
     data.images = images;
@@ -252,16 +253,20 @@ const suggestFromImage = async (req, res) => {
     const base64Image = fs.readFileSync(filePath).toString('base64');
     const mimeType = file.mimetype || 'image/jpeg';
 
-    const prompt = `Tu es un expert en reconnaissance automobile et moto.
+    const prompt = `Tu es un expert en reconnaissance automobile et moto, spécialisé dans le marché tunisien (Tunisie 2025-2026).
 Analyse cette image UNIQUE et retourne **UNIQUEMENT** un JSON valide :
-
 {
-  "marque":   "Toyota | Peugeot | BMW | Honda | ... | Inconnu",
-  "modele":   "208 | Clio | Civic | MT-07 | ... | ",
-  "type":     "Citadine | Berline | SUV / Crossover | Sportive | Cabriolet | Routière | Naked | Trail/Adventure | Scooter | ...",
-  "couleur":  "Noir | Blanc | Gris | Rouge | Bleu | Argent | ... | Inconnu",
+  "marque": "Toyota | Peugeot | Renault | Hyundai | Kia | Volkswagen | ... | Inconnu",
+  "modele": "208 | Clio | Symbol | Polo | Tucson | Duster | ... | ",
+  "type": "Citadine | Berline | SUV / Crossover | Compacte | Monospace | Routière | Sportive | Scooter | ...",
+  "couleur": "Noir | Blanc | Gris | Argent | Bleu | Rouge | Beige | ... | Inconnu",
+  "prixEstime": 45000,
   "confiance": 0.92
-}`;
+}
+Important :
+- "prixEstime" doit être une estimation réaliste du prix de vente actuel en Tunisie en DINARS TUNISIENS (TND), nombre entier, sans décimales, adapté au marché local occasion/neuf en 2026.
+- Ne mets jamais de symbole € ou $ ou devise autre que le nombre brut.
+- Si tu ne reconnais pas bien le véhicule, mets un prix très approximatif ou 0 et baisse fortement "confiance".`;
 
     if (USE_AI_PROVIDER !== 'gemini') {
       return res.status(503).json({
@@ -289,6 +294,12 @@ Analyse cette image UNIQUE et retourne **UNIQUEMENT** un JSON valide :
     detected.confiance = Number(detected.confiance) || 0.45;
     if (detected.confiance < 0 || detected.confiance > 1) {
       detected.confiance = 0.45;
+    }
+
+    // Sécurité sur prixEstime (MODIF: Ajout pour prix)
+    detected.prixEstime = Number(detected.prixEstime) || 0;
+    if (detected.prixEstime < 0) {
+      detected.prixEstime = 0;
     }
 
     if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
