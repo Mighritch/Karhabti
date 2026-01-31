@@ -1,4 +1,3 @@
-// VehiculeController.js (no changes needed, as the AI call succeeded with 'gemini-2.5-flash'; model is still available in Jan 2026 per sources)
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
 const fs = require('fs');

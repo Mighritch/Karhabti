@@ -18,7 +18,7 @@ interface Vehicule {
   couleur: string;
   etat: 'neuf' | 'occasion';
   motorisation: string;
-  prix: number;
+  prix?: number;  // Correction: Rendu optionnel pour éviter l'erreur si undefined
   createdAt: string;
 }
 
@@ -172,7 +172,7 @@ export default function VehiculeList({
 
                   <p className="v-meta price-line">
                     <span>
-                      Prix: <strong>{v.prix.toLocaleString('fr-TN')} TND</strong>
+                      Prix: <strong>{v.prix?.toLocaleString('fr-TN') ?? '—'} TND</strong>  {/* Correction: Ajout de ?. pour éviter l'erreur */}
                     </span>
                   </p>
 
