@@ -34,7 +34,7 @@ const createVoiture = async (req, res) => {
       });
 
     // Conversion nombres
-    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix'] // MODIF: Ajout pour prix
+    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix']
       .forEach(k => {
         if (data[k] !== undefined && data[k] !== '') {
           const num = Number(data[k]);
@@ -62,6 +62,63 @@ const createVoiture = async (req, res) => {
   }
 };
 
+const updateVoiture = async (req, res) => {
+  try {
+    const newImages = req.files?.map(file => ({
+      url: `/uploads/vehicules/${file.filename}`,
+      nomFichier: file.originalname
+    })) || [];
+
+    const data = { ...req.body };
+
+    // Conversions similaires à create
+    ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia']
+      .forEach(k => {
+        if (data[k] !== undefined) {
+          data[k] = data[k] === 'true' || data[k] === true || !!data[k];
+        }
+      });
+
+    ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix']
+      .forEach(k => {
+        if (data[k] !== undefined && data[k] !== '') {
+          const num = Number(data[k]);
+          data[k] = isNaN(num) ? undefined : num;
+        }
+      });
+
+    // Trouver la voiture existante
+    const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
+    if (!voiture) {
+      return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
+    }
+
+    // Mise à jour des champs
+    Object.assign(voiture, data);
+
+    // Ajouter nouvelles images aux existantes (pas de suppression automatique ici)
+    voiture.images = [...voiture.images, ...newImages];
+
+    // Mise à jour timestamp
+    voiture.updatedAt = Date.now();
+
+    await voiture.save();
+
+    res.json({
+      success: true,
+      message: 'Voiture mise à jour avec succès',
+      data: voiture
+    });
+  } catch (err) {
+    console.error('updateVoiture error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour de la voiture',
+      error: err.message
+    });
+  }
+};
+
 // ────────────────────────────────────────────────
 // CRUD – MOTOS
 // ────────────────────────────────────────────────
@@ -74,7 +131,7 @@ const createMoto = async (req, res) => {
 
     const data = { ...req.body };
 
-    ['annee', 'cylindre', 'kilometrage', 'prix'] // MODIF: Ajout pour prix
+    ['annee', 'cylindre', 'kilometrage', 'prix']
       .forEach(k => {
         if (data[k] !== undefined && data[k] !== '') {
           const num = Number(data[k]);
@@ -102,6 +159,58 @@ const createMoto = async (req, res) => {
   }
 };
 
+const updateMoto = async (req, res) => {
+  try {
+    const newImages = req.files?.map(file => ({
+      url: `/uploads/vehicules/${file.filename}`,
+      nomFichier: file.originalname
+    })) || [];
+
+    const data = { ...req.body };
+
+    ['annee', 'cylindre', 'kilometrage', 'prix']
+      .forEach(k => {
+        if (data[k] !== undefined && data[k] !== '') {
+          const num = Number(data[k]);
+          data[k] = isNaN(num) ? undefined : num;
+        }
+      });
+
+    // Trouver la moto existante
+    const moto = await Moto.findOne({ _id: req.params.id, agence: req.agence._id });
+    if (!moto) {
+      return res.status(404).json({ success: false, message: 'Moto non trouvée' });
+    }
+
+    // Mise à jour des champs
+    Object.assign(moto, data);
+
+    // Ajouter nouvelles images aux existantes
+    moto.images = [...moto.images, ...newImages];
+
+    // Mise à jour timestamp
+    moto.updatedAt = Date.now();
+
+    await moto.save();
+
+    res.json({
+      success: true,
+      message: 'Moto mise à jour avec succès',
+      data: moto
+    });
+  } catch (err) {
+    console.error('updateMoto error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour de la moto',
+      error: err.message
+    });
+  }
+};
+
+// ────────────────────────────────────────────────
+// Autres fonctions CRUD & utilitaires
+// ────────────────────────────────────────────────
 const getMyVoitures = async (req, res) => {
   try {
     const voitures = await Voiture.find({ agence: req.agence._id })
@@ -185,8 +294,6 @@ const suggestModels = async (req, res) => {
 Réponds **uniquement** avec un JSON valide :
 { "models": ["Modèle 1", "Modèle 2", ...] }`;
 
-    let models = [];
-
     if (USE_AI_PROVIDER !== 'gemini') {
       return res.status(503).json({
         success: false,
@@ -195,7 +302,7 @@ Réponds **uniquement** avec un JSON valide :
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',           // version stable et rapide en 2025-2026
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' }
     });
 
@@ -205,7 +312,7 @@ Réponds **uniquement** avec un JSON valide :
     ]);
 
     const parsed = JSON.parse(result.response.text());
-    models = parsed.models || [];
+    const models = parsed.models || [];
 
     res.json({ success: true, data: models });
   } catch (err) {
@@ -275,7 +382,7 @@ Important :
     }
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',           // support multimodal / vision – stable en 2026
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' }
     });
 
@@ -295,7 +402,7 @@ Important :
       detected.confiance = 0.45;
     }
 
-    // Sécurité sur prixEstime (MODIF: Ajout pour prix)
+    // Sécurité sur prixEstime
     detected.prixEstime = Number(detected.prixEstime) || 0;
     if (detected.prixEstime < 0) {
       detected.prixEstime = 0;
@@ -335,7 +442,9 @@ Important :
 
 module.exports = {
   createVoiture,
+  updateVoiture,
   createMoto,
+  updateMoto,
   getMyVoitures,
   getMyMotos,
   deleteVoiture,

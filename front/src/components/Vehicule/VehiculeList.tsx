@@ -1,8 +1,8 @@
-// VehiculeList.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { FaCar, FaMotorcycle, FaTrash, FaSpinner, FaPlus } from 'react-icons/fa';
+import { FaCar, FaMotorcycle, FaTrash, FaSpinner, FaPlus, FaEdit } from 'react-icons/fa';
+import VehiculeForm from './VehiculeForm';
 import './VehiculeList.css';
 
 interface Vehicule {
@@ -18,7 +18,7 @@ interface Vehicule {
   couleur: string;
   etat: 'neuf' | 'occasion';
   motorisation: string;
-  prix?: number;  // Correction: Rendu optionnel pour éviter l'erreur si undefined
+  prix?: number;
   createdAt: string;
 }
 
@@ -40,15 +40,16 @@ export default function VehiculeList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editVehicule, setEditVehicule] = useState<Vehicule | null>(null);
 
   const getImageUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    const baseUrl = 'http://localhost:5000'; // ← à adapter en prod (ou via variable d'env)
+    const baseUrl = 'http://localhost:5000';
     return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
-  const fetchVehicules = async () => {
+  const fetchVehicules = useCallback(async () => {
     try {
       setLoading(true);
       const endpoint = typeVehicule === 'voiture' ? '/vehicules/me/voitures' : '/vehicules/me/motos';
@@ -59,16 +60,16 @@ export default function VehiculeList({
       if (res.data.success) {
         setVehicules(res.data.data);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la récupération des véhicules');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erreur lors de la récupération des véhicules');
     } finally {
       setLoading(false);
     }
-  };
+  }, [agenceId, typeVehicule, token]);
 
   useEffect(() => {
     fetchVehicules();
-  }, [agenceId, typeVehicule]);
+  }, [fetchVehicules]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Voulez-vous vraiment supprimer ce véhicule ?')) return;
@@ -79,9 +80,22 @@ export default function VehiculeList({
         headers: { Authorization: `Bearer ${token}` },
       });
       setVehicules((prev) => prev.filter((v) => v._id !== id));
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Erreur lors de la suppression');
+    } catch (err: unknown) {
+      alert((err as Error).message || 'Erreur lors de la suppression');
     }
+  };
+
+  const handleEdit = (vehicule: Vehicule) => {
+    setEditVehicule(vehicule);
+  };
+
+  const handleEditSuccess = () => {
+    setEditVehicule(null);
+    fetchVehicules();
+  };
+
+  const handleEditCancel = () => {
+    setEditVehicule(null);
   };
 
   return (
@@ -172,7 +186,7 @@ export default function VehiculeList({
 
                   <p className="v-meta price-line">
                     <span>
-                      Prix: <strong>{v.prix?.toLocaleString('fr-TN') ?? '—'} TND</strong>  {/* Correction: Ajout de ?. pour éviter l'erreur */}
+                      Prix: <strong>{v.prix?.toLocaleString('fr-TN') ?? '—'} TND</strong>
                     </span>
                   </p>
 
@@ -185,6 +199,13 @@ export default function VehiculeList({
 
                   <div className="card-actions">
                     <button
+                      className="btn-edit"
+                      style={{ flex: 1 }}
+                      onClick={() => handleEdit(v)}
+                    >
+                      <FaEdit /> Modifier
+                    </button>
+                    <button
                       className="btn-delete"
                       style={{ flex: 1 }}
                       onClick={() => handleDelete(v._id)}
@@ -195,6 +216,19 @@ export default function VehiculeList({
                 </div>
               </div>
             ))}
+        </div>
+      )}
+
+      {editVehicule && (
+        <div className="edit-modal">
+          <VehiculeForm
+            agenceId={agenceId}
+            typeVehicule={typeVehicule}
+            onSuccess={handleEditSuccess}
+            onCancel={handleEditCancel}
+            vehiculeId={editVehicule._id}
+            initialData={editVehicule}
+          />
         </div>
       )}
     </div>
