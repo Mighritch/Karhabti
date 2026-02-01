@@ -1,8 +1,9 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
-// Fonction pour générer un token JWT
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -11,16 +12,12 @@ const generateToken = (user) => {
       role: user.role
     },
     process.env.JWT_SECRET || 'votre-secret-super-long-et-complexe-ici',
-    { expiresIn: '7d' } // 7 jours – à ajuster selon tes besoins
+    { expiresIn: '7d' }
   );
 };
 
-// @desc    Inscription d'un nouvel utilisateur
-// @route   POST /api/users/signup
-// @access  Public
 exports.signup = async (req, res) => {
   try {
-    // Validation express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -31,13 +28,11 @@ exports.signup = async (req, res) => {
 
     const { nom, prenom, dateNaissance, telephone, email, mdp, role } = req.body;
 
-    // Gestion du rôle – liste blanche + fallback sécurisé
     const validRoles = ['user', 'agent', 'admin'];
     const userRole = role && validRoles.includes(role.trim().toLowerCase())
       ? role.trim().toLowerCase()
-      : 'user';   // ← rôle par défaut
+      : 'user';
 
-    // Vérifier si l'email existe déjà
     const userExists = await User.findOne({ email: email.toLowerCase() });
     if (userExists) {
       return res.status(400).json({
@@ -46,21 +41,18 @@ exports.signup = async (req, res) => {
       });
     }
 
-    // Création de l'utilisateur
     const user = await User.create({
       nom,
       prenom,
       dateNaissance,
       telephone,
       email: email.toLowerCase(),
-      mdp,                // ← doit être hashé dans le model (pre-save hook)
+      mdp,
       role: userRole
     });
 
-    // Token
     const token = generateToken(user);
 
-    // Réponse réussie
     res.status(201).json({
       success: true,
       message: 'Compte créé avec succès',
@@ -70,23 +62,19 @@ exports.signup = async (req, res) => {
         nom: user.nom,
         prenom: user.prenom,
         email: user.email,
-        role: user.role        // ← important pour le frontend
+        role: user.role
       }
     });
-
   } catch (error) {
     console.error('Erreur inscription :', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur lors de l\'inscription',
-      error: error.message   // ← utile en dev, à retirer ou masquer en prod
+      message: "Erreur serveur lors de l'inscription",
+      error: error.message
     });
   }
 };
 
-// @desc    Connexion utilisateur
-// @route   POST /api/users/signin
-// @access  Public
 exports.signin = async (req, res) => {
   try {
     const { email, mdp } = req.body;
@@ -98,7 +86,6 @@ exports.signin = async (req, res) => {
       });
     }
 
-    // Récupérer utilisateur + mot de passe
     const user = await User.findOne({ email: email.toLowerCase() }).select('+mdp');
 
     if (!user) {
@@ -130,7 +117,6 @@ exports.signin = async (req, res) => {
         role: user.role
       }
     });
-
   } catch (error) {
     console.error('Erreur connexion :', error);
     res.status(500).json({
@@ -141,12 +127,8 @@ exports.signin = async (req, res) => {
   }
 };
 
-// @desc    Récupérer le profil de l'utilisateur connecté
-// @route   GET /api/users/me
-// @access  Private (doit passer par middleware auth)
 exports.getMe = async (req, res) => {
   try {
-    // req.user est déjà attaché par le middleware protect
     if (!req.user) {
       return res.status(404).json({
         success: false,
@@ -165,5 +147,122 @@ exports.getMe = async (req, res) => {
       message: 'Erreur serveur',
       error: error.message
     });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Aucun utilisateur trouvé avec cet email"
+      });
+    }
+
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    const message =
+      `Bonjour ${user.prenom || user.nom || 'utilisateur'},\n\n` +
+      `Vous avez demandé une réinitialisation de mot de passe sur Karhabti.\n\n` +
+      `Cliquez sur le lien suivant pour créer un nouveau mot de passe :\n` +
+      `${resetUrl}\n\n` +
+      `Ce lien expirera dans 10 minutes.\n\n` +
+      `Si vous n'avez pas fait cette demande, ignorez simplement cet email.\n\n` +
+      `Cordialement,\nL'équipe Karhabti`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Réinitialisation de mot de passe - Karhabti',
+        message
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Email de réinitialisation envoyé avec succès. Vérifiez votre boîte mail (et dossier spam).'
+      });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      console.error('Erreur envoi email Brevo :', err);
+      return res.status(500).json({
+        success: false,
+        message: "Impossible d'envoyer l'email pour le moment. Réessayez plus tard."
+      });
+    }
+  } catch (error) {
+    console.error('Erreur forgotPassword :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const resetPasswordToken = crypto.createHash('sha256').update(req.params.resettoken).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Token invalide ou expiré"
+      });
+    }
+
+    user.mdp = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Mot de passe mis à jour avec succès"
+    });
+  } catch (error) {
+    console.error('Erreur resetPassword :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
+exports.directReset = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Aucun utilisateur trouvé avec cet email" });
+    }
+
+    user.mdp = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Mot de passe modifié" });
+  } catch (error) {
+    console.error('Erreur directReset :', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
