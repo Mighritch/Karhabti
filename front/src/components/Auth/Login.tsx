@@ -1,3 +1,4 @@
+// src/components/Auth/Login.tsx
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -8,7 +9,7 @@ import { FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
 
 const schema = yup.object({
   email: yup.string().email('Email invalide').required('Email requis'),
-  password: yup.string().min(6, 'Au moins 6 caractères').required('Mot de passe requis'),
+  mdp: yup.string().min(6, 'Au moins 6 caractères').required('Mot de passe requis'),
 }).required();
 
 type FormData = yup.InferType<typeof schema>;
@@ -30,11 +31,10 @@ export default function Login() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
       setServerError(null);
-      await login(data.email, data.password);
+      await login(data.email, data.mdp);           // ← on passe mdp
       navigate('/dashboard');
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setServerError(error.response?.data?.message || 'Erreur de connexion');
+    } catch (err: any) {
+      setServerError(err.message || 'Identifiants incorrects');
     }
   };
 
@@ -50,6 +50,7 @@ export default function Login() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             placeholder="exemple@domaine.com"
             {...register('email')}
           />
@@ -57,13 +58,14 @@ export default function Login() {
         </div>
 
         <div className="form-group password-group">
-          <label htmlFor="password">Mot de passe</label>
+          <label htmlFor="mdp">Mot de passe</label>
           <div className="password-wrapper">
             <input
-              id="password"
+              id="mdp"
               type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"           // ← important pour les gestionnaires de mots de passe
               placeholder="••••••••"
-              {...register('password')}
+              {...register('mdp')}
             />
             <button
               type="button"
@@ -74,11 +76,10 @@ export default function Login() {
               {showPassword ? <FiEyeOff /> : <FiEye />}
             </button>
           </div>
-          {errors.password && <span className="error">{errors.password.message}</span>}
+          {errors.mdp && <span className="error">{errors.mdp.message}</span>}
 
           <div className="forgot-link-container">
-            {/* On envoie vers reset-password avec un flag "direct" */}
-            <Link to="/reset-password/direct">Mot de passe oublié ?</Link>
+            <Link to="/forgot-password">Mot de passe oublié ?</Link>
           </div>
         </div>
 

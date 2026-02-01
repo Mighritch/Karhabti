@@ -1,4 +1,3 @@
-// App.tsx
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -12,8 +11,7 @@ import MesAgences from './components/Agence/MesAgences';
 import AdminAgences from './components/Admin/AdminAgence';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import ResetPassword from './components/Auth/ResetPassword';
-
-
+import Dashboard from  './pages/Dashboard';
 import { Toaster } from 'react-hot-toast';
 
 import './App.css';
@@ -21,7 +19,14 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter 
+        future={{ 
+          v7_relativeSplatPath: true     // ← supprime le warning
+          // Tu peux aussi ajouter d'autres flags si tu les utilises :
+          // v7_startTransition: true,
+          // v7_fetcherPersist: true,
+        }}
+      >
         <div className="app-layout">
           <Header />
 
@@ -37,42 +42,32 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<div className="protected-placeholder">Tableau de bord (protégé)</div>} />
                 <Route path="/profile" element={<Profile />} />
-                
-                {/* Route admin intégrée */}
                 <Route path="/admin/agences" element={<AdminAgences />} />
               </Route>
 
-              {/* Routes publiques ou spécifiques aux rôles */}
+              {/* Routes publiques */}
               <Route path="/" element={<div className="home-placeholder">Page d'accueil publique</div>} />
-              
               <Route path="/agences" element={<Agences />} />
-              
               <Route path="/mes-agences" element={<MesAgences />} />
+              // src/App.tsx
 
-              {/* Catch-all */}
+<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+              {/* 404 */}
               <Route path="*" element={<div className="not-found">404 — Page non trouvée</div>} />
             </Routes>
           </main>
         </div>
 
-        {/* Notification toaster global */}
         <Toaster 
           position="top-center" 
-          toastOptions={{ 
-            duration: 4000,
-            // Vous pouvez ajouter d'autres options si besoin :
-            // style: { ... },
-            // success: { style: { ... } },
-          }} 
+          toastOptions={{ duration: 4000 }} 
         />
       </BrowserRouter>
     </AuthProvider>
   );
 }
 
-/**
- * Composant de mise en page pour l'authentification
- */
 function CenteredAuth({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth-page-wrapper">

@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { FaCheck, FaSpinner, FaBuilding } from 'react-icons/fa';
+import { 
+  FaCheck, FaTimes, FaSpinner, 
+  FaCar, FaMotorcycle, FaEye 
+} from 'react-icons/fa';
+import { AxiosError } from 'axios';
+import VehiculeList from '../Vehicule/VehiculeList';
 import './AdminAgences.css';
 
 interface Agence {
@@ -11,8 +16,8 @@ interface Agence {
   adresse: string;
   telephone: string;
   email: string;
-  typeAgence: string;
-  typeVehicule: string;
+  typeAgence: ('vente' | 'location')[];
+  typeVehicule: ('voiture' | 'moto')[];
   status: 'pending' | 'approved' | 'rejected';
   agent: {
     nom: string;
@@ -20,14 +25,21 @@ interface Agence {
     email: string;
   };
   createdAt: string;
+  totalVoitures?: number;
+  totalMotos?: number;
+  totalVehicules?: number;
 }
 
 export default function AdminAgences() {
   const { user } = useAuth();
+  
   const [allAgences, setAllAgences] = useState<Agence[]>([]);
   const [pendingAgences, setPendingAgences] = useState<Agence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [selectedAgence, setSelectedAgence] = useState<Agence | null>(null);
+  const [showVehicules, setShowVehicules] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'admin') return;
@@ -35,15 +47,18 @@ export default function AdminAgences() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [allRes, pendingRes] = await Promise.all([
-          api.get('/agences/all'),
-          api.get('/agences/pending')
-        ]);
-
-        if (allRes.data.success) setAllAgences(allRes.data.data || []);
-        if (pendingRes.data.success) setPendingAgences(pendingRes.data.data || []);
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors du chargement');
+        
+        const res = await api.get('/agences/my-agence');
+        
+        if (res.data?.success) {
+          const agencesData = res.data.data || [];
+          setAllAgences(agencesData);
+          setPendingAgences(agencesData.filter((a: Agence) => a.status === 'pending'));
+        }
+      } catch (err: unknown) {
+        console.error(err);
+        const axiosErr = err as AxiosError;
+        setError(axiosErr.response?.data?.message || 'Erreur lors du chargement des agences');
       } finally {
         setLoading(false);
       }
@@ -52,28 +67,42 @@ export default function AdminAgences() {
     fetchData();
   }, [user]);
 
-  const handleApprove = async (id: string) => {
-    if (!window.confirm('Approuver cette agence ?')) return;
+  const handleStatusChange = async (agenceId: string, status: 'approved' | 'rejected') => {
+    if (!window.confirm(`Confirmer : ${status === 'approved' ? 'approuver' : 'rejeter'} cette agence ?`)) {
+      return;
+    }
 
     try {
-      const res = await api.put(`/agences/${id}/approve`);
+      const res = await api.put(`/agences/${agenceId}/approve`, { status });
+      
       if (res.data.success) {
-        // Rafraîchir les listes
-        setPendingAgences(prev => prev.filter(a => a._id !== id));
         setAllAgences(prev =>
-          prev.map(a => a._id === id ? { ...a, status: 'approved' } : a)
+          prev.map(a => a._id === agenceId ? { ...a, status } : a)
         );
+        setPendingAgences(prev => prev.filter(a => a._id !== agenceId));
       }
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Erreur lors de l’approbation');
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError;
+      alert(axiosErr.response?.data?.message || 'Erreur lors du changement de statut');
     }
+  };
+
+  const viewVehicles = (agence: Agence) => {
+    setSelectedAgence(agence);
+    setShowVehicules(true);
   };
 
   if (user?.role !== 'admin') {
     return <div className="access-denied">Accès réservé aux administrateurs</div>;
   }
 
-  if (loading) return <div className="loading"><FaSpinner className="spin" /> Chargement...</div>;
+  if (loading) {
+    return (
+      <div className="loading">
+        <FaSpinner className="spin" /> Chargement des agences...
+      </div>
+    );
+  }
 
   return (
     <div className="admin-agences-page">
@@ -81,23 +110,51 @@ export default function AdminAgences() {
 
       {error && <div className="error-message">{error}</div>}
 
-      <section>
-        <h2>Agences en attente d'approbation ({pendingAgences.length})</h2>
+      <section className="pending-section">
+        <h2>Agences en attente ({pendingAgences.length})</h2>
+        
         {pendingAgences.length === 0 ? (
-          <p>Aucune agence en attente.</p>
+          <p className="empty">Aucune agence en attente d'approbation.</p>
         ) : (
           <div className="agences-grid">
             {pendingAgences.map(agence => (
-              <div key={agence._id} className="agence-card pending">
-                <h3>{agence.nom}</h3>
-                <p>{agence.ville} • {agence.adresse}</p>
-                <p>{agence.typeAgence} - {agence.typeVehicule}</p>
-                <p className="agent-info">
-                  Agent : {agence.agent?.prenom} {agence.agent?.nom} ({agence.agent?.email})
+              <div key={agence._id} className={`agence-card ${agence.status}`}>
+                <div className="agence-header">
+                  <h3>{agence.nom}</h3>
+                  <span className={`status-badge ${agence.status}`}>
+                    {agence.status === 'pending' ? 'En attente' :
+                     agence.status === 'approved' ? 'Approuvée' : 'Rejetée'}
+                  </span>
+                </div>
+                
+                <p className="location">{agence.ville} • {agence.adresse}</p>
+                <p className="types">
+                  {agence.typeAgence.join(' & ')} • {agence.typeVehicule.join(' & ')}
                 </p>
+                
+                <div className="agent-info">
+                  Agent : {agence.agent?.prenom} {agence.agent?.nom} 
+                  <small>({agence.agent?.email})</small>
+                </div>
+
+                <div className="agence-stats">
+                  <div><FaCar /> {agence.totalVoitures ?? 0} voitures</div>
+                  <div><FaMotorcycle /> {agence.totalMotos ?? 0} motos</div>
+                  <div className="total"><strong>Total : {agence.totalVehicules ?? 0}</strong></div>
+                </div>
+
                 <div className="actions">
-                  <button className="btn-approve" onClick={() => handleApprove(agence._id)}>
+                  <button 
+                    className="btn-approve"
+                    onClick={() => handleStatusChange(agence._id, 'approved')}
+                  >
                     <FaCheck /> Approuver
+                  </button>
+                  <button 
+                    className="btn-reject"
+                    onClick={() => handleStatusChange(agence._id, 'rejected')}
+                  >
+                    <FaTimes /> Rejeter
                   </button>
                 </div>
               </div>
@@ -106,20 +163,77 @@ export default function AdminAgences() {
         )}
       </section>
 
-      <section>
+      <section className="all-agences-section">
         <h2>Toutes les agences ({allAgences.length})</h2>
-        <div className="agences-grid">
-          {allAgences.map(agence => (
-            <div key={agence._id} className={`agence-card ${agence.status}`}>
-              <h3>{agence.nom}</h3>
-              <p>{agence.ville} • {agence.adresse}</p>
-              <p>{agence.typeAgence} - {agence.typeVehicule}</p>
-              <p>Statut : <strong>{agence.status}</strong></p>
-              <small>Agent : {agence.agent?.prenom} {agence.agent?.nom}</small>
-            </div>
-          ))}
-        </div>
+        
+        {allAgences.length === 0 ? (
+          <p className="empty">Aucune agence enregistrée.</p>
+        ) : (
+          <div className="agences-grid">
+            {allAgences.map(agence => (
+              <div key={agence._id} className={`agence-card ${agence.status}`}>
+                <div className="agence-header">
+                  <h3>{agence.nom}</h3>
+                  <span className={`status-badge ${agence.status}`}>
+                    {agence.status === 'pending' ? 'En attente' :
+                     agence.status === 'approved' ? 'Approuvée' : 'Rejetée'}
+                  </span>
+                </div>
+                
+                <p className="location">{agence.ville} • {agence.adresse}</p>
+                <p className="types">
+                  {agence.typeAgence.join(' & ')} • {agence.typeVehicule.join(' & ')}
+                </p>
+                
+                <div className="agent-info">
+                  Agent : {agence.agent?.prenom} {agence.agent?.nom} 
+                  <small>({agence.agent?.email})</small>
+                </div>
+
+                <div className="agence-stats">
+                  <div><FaCar /> {agence.totalVoitures ?? 0} voitures</div>
+                  <div><FaMotorcycle /> {agence.totalMotos ?? 0} motos</div>
+                  <div className="total"><strong>Total : {agence.totalVehicules ?? 0}</strong></div>
+                </div>
+
+                <div className="actions">
+                  <button 
+                    className="btn-view-vehicles"
+                    onClick={() => viewVehicles(agence)}
+                    disabled={agence.totalVehicules === 0}
+                  >
+                    <FaEye /> Voir les véhicules ({agence.totalVehicules ?? 0})
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
+
+      {showVehicules && selectedAgence && (
+        <div className="vehicules-modal-overlay">
+          <div className="vehicules-modal">
+            <div className="modal-header">
+              <h2>
+                Véhicules de : {selectedAgence.nom}
+                <small> ({selectedAgence.totalVehicules ?? 0} au total)</small>
+              </h2>
+              <button className="btn-close-modal" onClick={() => setShowVehicules(false)}>
+                ×
+              </button>
+            </div>
+
+            <VehiculeList
+              agenceId={selectedAgence._id}
+              typeVehicule="voiture"
+              onClose={() => setShowVehicules(false)}
+              onAddClick={() => {}}
+              isAdminView={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

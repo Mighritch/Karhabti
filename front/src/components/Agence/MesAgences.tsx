@@ -1,8 +1,10 @@
-// src/components/Agence/MesAgences.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, FaTrash, FaCheck, FaTimes } from 'react-icons/fa';
+import { 
+  FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, 
+  FaTrash, FaCheck, FaTimes, FaCar, FaMotorcycle, FaEye 
+} from 'react-icons/fa';
 import AgenceForm from './AgenceForm';
 import VehiculeForm from '../Vehicule/VehiculeForm';
 import VehiculeList from '../Vehicule/VehiculeList';
@@ -28,6 +30,9 @@ export interface Agence {
     email: string;
   };
   createdAt: string;
+  totalVoitures?: number;
+  totalMotos?: number;
+  totalVehicules?: number;
 }
 
 export default function MesAgences() {
@@ -91,243 +96,84 @@ export default function MesAgences() {
   const handleDelete = async (agenceId: string, agenceNom: string) => {
     toast(
       (t) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '320px' }}>
-          <span>
-            Confirmer la suppression de <strong>{agenceNom}</strong> ?
-          </span>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                background: '#444',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  const res = await api.delete(`/agences/${agenceId}`);
-                  if (res.data.success) {
-                    setAgences((prev) => prev.filter((a) => a._id !== agenceId));
-                    toast.success(`L'agence "${agenceNom}" a été supprimée`, {
-                      icon: '🗑️',
-                      duration: 4000,
-                    });
-                  }
-                } catch (err: any) {
-                  toast.error(err.response?.data?.message || 'Erreur lors de la suppression', {
-                    duration: 5000,
-                  });
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <span>Confirmer la suppression de "{agenceNom}" ?</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <button className="btn-cancel" onClick={() => toast.dismiss(t.id)}>Annuler</button>
+            <button className="btn-delete" onClick={async () => {
+              try {
+                const res = await api.delete(`/agences/${agenceId}`);
+                if (res.data.success) {
+                  setAgences((prev) => prev.filter((a) => a._id !== agenceId));
+                  toast.success('Agence supprimée avec succès');
                 }
-              }}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                background: '#dc3545',
-                color: 'white',
-                border: 'none',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
-            >
+              } catch (err: any) {
+                toast.error(err.response?.data?.message || 'Erreur lors de la suppression');
+              } finally {
+                toast.dismiss(t.id);
+              }
+            }}>
               Supprimer
             </button>
           </div>
         </div>
       ),
-      {
-        duration: Infinity,
-        position: 'top-center',
-        style: {
-          background: '#222',
-          color: '#fff',
-          borderRadius: '8px',
-          padding: '16px',
-        },
-      }
+      { duration: Infinity }
     );
   };
 
-  const openVehiculeForm = (agence: Agence) => {
-    setSelectedAgence(agence);
-    setShowVehiculeForm(true);
-    setShowVehiculeList(false);
+  const handleSuccess = (updatedAgence: Agence) => {
+    setAgences((prev) =>
+      prev.map((a) => (a._id === updatedAgence._id ? updatedAgence : a))
+    );
+    setShowForm(false);
+    setEditingAgence(null);
+    toast.success('Agence mise à jour avec succès');
   };
 
-  const openVehiculeList = (agence: Agence) => {
-    setSelectedAgence(agence);
-    setShowVehiculeList(true);
+  const handleCreateSuccess = (newAgence: Agence) => {
+    setAgences((prev) => [...prev, newAgence]);
+    setShowForm(false);
+    toast.success('Agence créée avec succès');
+  };
+
+  const handleVehiculeSuccess = () => {
     setShowVehiculeForm(false);
-    setShowProfileModal(false);
+    toast.success('Véhicule ajouté avec succès');
   };
 
-  const openAgenceProfile = (agence: Agence) => {
+  const handleViewProfile = (agence: Agence) => {
     setSelectedAgence(agence);
     setShowProfileModal(true);
-    setShowVehiculeList(false);
-    setShowVehiculeForm(false);
   };
 
-  const handleAgenceCreatedOrUpdated = (agence: Agence) => {
-    if (editingAgence) {
-      setAgences((prev) =>
-        prev.map((a) => (a._id === agence._id ? agence : a))
-      );
-      setEditingAgence(null);
-    } else {
-      setAgences((prev) => [...prev, agence]);
-    }
-    setShowForm(false);
-  };
-
-  if (!user) {
-    return <div className="access-denied"><h2>Veuillez vous connecter</h2></div>;
+  if (loading) {
+    return <div className="loading">Chargement de vos agences... <FaSpinner className="spin" /></div>;
   }
 
-  if (user.role !== 'agent' && user.role !== 'admin') {
-    return <div className="access-denied"><h2>Accès non autorisé</h2></div>;
+  if (!user || (user.role !== 'agent' && user.role !== 'admin')) {
+    return <div className="error">Accès non autorisé. Vous devez être agent ou admin.</div>;
   }
+
+  const isAdmin = user.role === 'admin';
+  const canCreate = !isAdmin && agences.length === 0;
 
   return (
     <div className="mes-agences-page">
       <div className="page-header">
-        <div className="header-title-wrapper">
-          <h1><FaBuilding /> {user.role === 'admin' ? 'Gestion Globale des Agences' : 'Mes Agences'}</h1>
-          {user.role === 'admin' && agences.length > 0 && (
-            <span className="total-badge">Total: {agences.length}</span>
-          )}
-        </div>
-        {user.role === 'agent' && (
-          <button
-            className="btn-create"
-            onClick={() => {
-              setEditingAgence(null);
-              setShowForm(true);
-            }}
-          >
-            <FaPlus /> Nouvelle agence
+        <h1>{isAdmin ? 'Gestion des Agences' : 'Mes Agences'}</h1>
+        {canCreate && (
+          <button className="btn-create" onClick={() => setShowForm(true)}>
+            <FaPlus /> Ajouter une agence
           </button>
         )}
       </div>
 
-      {loading ? (
-        <div className="loading">
-          <FaSpinner className="spin" /> Chargement...
-        </div>
-      ) : agences.length === 0 ? (
-        <div className="no-agence">
-          <p>{user.role === 'admin' ? "Aucune agence n'a été créée." : "Vous n'avez pas encore créé d'agence."}</p>
-          {user.role === 'agent' && (
-            <button className="btn-create" onClick={() => setShowForm(true)}>
-              <FaPlus /> Créer mon agence
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="agences-grid">
-          {agences.map((agence) => (
-            <div key={agence._id} className={`agence-card shadow-premium ${agence.status}`}>
-              <h3>{agence.nom}</h3>
-              <div className="card-body">
-                <p>
-                  {agence.typeAgence.map(t => (
-                    <span key={t} className="type-badge">{t === 'vente' ? 'Vente' : 'Location'}</span>
-                  ))}
-                  {agence.typeVehicule.map(v => (
-                    <span key={v} className="type-badge">{v === 'voiture' ? '🚗 Voiture' : '🏍️ Moto'}</span>
-                  ))}
-                  {agence.typeAgence.includes('vente') && agence.etatVehicule && agence.etatVehicule.map(e => (
-                    <span key={e} className="type-badge etat-badge">{e === 'neuf' ? '✨ Neuf' : '🔧 Occasion'}</span>
-                  ))}
-                  <span className={`status-badge ${agence.status}`}>
-                    {agence.status === 'approved' ? 'Approuvée' :
-                      agence.status === 'pending' ? 'En attente' : 'Rejetée'}
-                  </span>
-                </p>
-                <p><strong>{agence.ville}</strong> • {agence.adresse}</p>
-                {user.role === 'admin' && agence.agent && (
-                  <p className="agent-meta">
-                    👤 Agent : <strong>{agence.agent.prenom} {agence.agent.nom}</strong>
-                  </p>
-                )}
-              </div>
-
-              <div className="actions">
-                {user.role === 'admin' && agence.status === 'pending' && (
-                  <div className="admin-approval-actions">
-                    <button
-                      className="btn-approve"
-                      onClick={() => handleStatusChange(agence._id, 'approved')}
-                      title="Approuver l'agence"
-                    >
-                      <FaCheck /> Approuver
-                    </button>
-                    <button
-                      className="btn-reject"
-                      onClick={() => handleStatusChange(agence._id, 'rejected')}
-                      title="Rejeter l'agence"
-                    >
-                      <FaTimes /> Rejeter
-                    </button>
-                  </div>
-                )}
-
-                {agence.status === 'approved' && (
-                  <>
-                    <button className="btn-list-vehicles" onClick={() => openVehiculeList(agence)}>
-                      <FaList /> Véhicules
-                    </button>
-                    <button className="btn-add-vehicle" onClick={() => openVehiculeForm(agence)}>
-                      + Ajouter véhicule
-                    </button>
-                  </>
-                )}
-
-                <button
-                  className="btn-profile"
-                  onClick={() => openAgenceProfile(agence)}
-                  title="Voir le profil de l'agence"
-                >
-                  <FaBuilding /> Profil
-                </button>
-
-                {(user.role === 'admin' || user.role === 'agent') && (
-                  <button
-                    className="btn-edit"
-                    onClick={() => handleEdit(agence)}
-                    title="Modifier cette agence"
-                  >
-                    <FaEdit /> Modifier
-                  </button>
-                )}
-
-                {(user.role === 'admin' || user.role === 'agent') && (
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(agence._id, agence.nom)}
-                    title="Supprimer cette agence"
-                  >
-                    <FaTrash /> Supprimer
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {showForm && (
-        <div className="modal-overlay">
+        <div className="form-container">
           <AgenceForm
             agence={editingAgence}
-            onSuccess={handleAgenceCreatedOrUpdated}
+            onSuccess={editingAgence ? handleSuccess : handleCreateSuccess}
             onCancel={() => {
               setShowForm(false);
               setEditingAgence(null);
@@ -336,41 +182,137 @@ export default function MesAgences() {
         </div>
       )}
 
+      {agences.length === 0 ? (
+        <p className="no-agence">
+          {isAdmin ? 'Aucune agence enregistrée sur la plateforme.' : 'Vous n’avez pas encore d’agence. Ajoutez-en une !'}
+        </p>
+      ) : (
+        <div className="agences-list">
+          {agences.map((agence) => (
+            <div key={agence._id} className="agence-card">
+              <div className="card-header">
+                <FaBuilding className="icon" />
+                <h3>{agence.nom}</h3>
+                <span className={`status-badge ${agence.status}`}>
+                  {agence.status === 'approved' ? 'Approuvée' : agence.status === 'pending' ? 'En attente' : 'Rejetée'}
+                </span>
+              </div>
+
+              <div className="card-info">
+                <p>{agence.ville} • {agence.adresse}</p>
+                <p>{agence.telephone} • {agence.email}</p>
+              </div>
+
+              {isAdmin && (
+                <div className="stats-section">
+                  <h4>Statistiques Véhicules</h4>
+                  <p><FaCar /> Voitures: {agence.totalVoitures ?? 0}</p>
+                  <p><FaMotorcycle /> Motos: {agence.totalMotos ?? 0}</p>
+                  <p>Total: {agence.totalVehicules ?? 0}</p>
+                </div>
+              )}
+
+              <div className="card-actions">
+                {isAdmin ? (
+                  <>
+                    {agence.status === 'pending' && (
+                      <>
+                        <button
+                          className="btn-approve"
+                          onClick={() => handleStatusChange(agence._id, 'approved')}
+                        >
+                          <FaCheck /> Approuver
+                        </button>
+                        <button
+                          className="btn-reject"
+                          onClick={() => handleStatusChange(agence._id, 'rejected')}
+                        >
+                          <FaTimes /> Rejeter
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className="btn-view-profile"
+                      onClick={() => handleViewProfile(agence)}
+                    >
+                      <FaEye /> Voir profil
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn-edit" onClick={() => handleEdit(agence)}>
+                      <FaEdit /> Modifier
+                    </button>
+                    <button className="btn-delete" onClick={() => handleDelete(agence._id, agence.nom)}>
+                      <FaTrash /> Supprimer
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {agence.status === 'approved' && (
+                <div className="vehicule-actions">
+                  <button
+                    className="btn-add-vehicule"
+                    onClick={() => {
+                      setSelectedAgence(agence);
+                      setShowVehiculeForm(true);
+                    }}
+                  >
+                    <FaPlus /> Ajouter un véhicule
+                  </button>
+                  <button
+                    className="btn-list-vehicule"
+                    onClick={() => {
+                      setSelectedAgence(agence);
+                      setShowVehiculeList(true);
+                    }}
+                  >
+                    <FaList /> Voir les véhicules
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {showVehiculeForm && selectedAgence && (
         <div className="modal-overlay">
-          <VehiculeForm
-            agenceId={selectedAgence._id}
-            typeVehicule={selectedAgence.typeVehicule[0]} // Use first type as default
-            onSuccess={() => {
-              setShowVehiculeForm(false);
-              openVehiculeList(selectedAgence);
-            }}
-            onCancel={() => setShowVehiculeForm(false)}
-          />
+          <div className="modal-content">
+            <VehiculeForm
+              agenceId={selectedAgence._id}
+              typeVehicule={selectedAgence.typeVehicule[0]}
+              onSuccess={handleVehiculeSuccess}
+              onCancel={() => setShowVehiculeForm(false)}
+            />
+          </div>
         </div>
       )}
 
       {showVehiculeList && selectedAgence && (
         <div className="modal-overlay">
-          <VehiculeList
-            agenceId={selectedAgence._id}
-            typeVehicule={selectedAgence.typeVehicule[0]} // Pass the first type
-            onClose={() => setShowVehiculeList(false)}
-            onAddClick={() => openVehiculeForm(selectedAgence)}
-          />
+          <div className="modal-content">
+            <VehiculeList
+              agenceId={selectedAgence._id}
+              typeVehicule={selectedAgence.typeVehicule[0]}
+              onClose={() => setShowVehiculeList(false)}
+              onAddClick={() => {
+                setShowVehiculeList(false);
+                setShowVehiculeForm(true);
+              }}
+            />
+          </div>
         </div>
       )}
 
       {showProfileModal && selectedAgence && (
         <div className="modal-overlay">
-          <div className="agence-profile-modal glass-card">
-            <div className="modal-header">
-              <h2><FaBuilding /> Profil de l'agence</h2>
-              <button className="btn-close" onClick={() => setShowProfileModal(false)}>&times;</button>
-            </div>
-            <div className="modal-body profile-details">
+          <div className="modal-content profile-modal">
+            <h2>Détails de l'agence : {selectedAgence.nom}</h2>
+            <div className="profile-details">
               <div className="detail-item">
-                <span className="label">Nom de l'agence:</span>
+                <span className="label">Nom:</span>
                 <span className="value">{selectedAgence.nom}</span>
               </div>
               <div className="detail-item">
@@ -410,6 +352,24 @@ export default function MesAgences() {
                     selectedAgence.status === 'pending' ? 'En attente' : 'Rejetée'}
                 </span>
               </div>
+
+              {isAdmin && (
+                <div className="stats-section">
+                  <h3>Statistiques Véhicules</h3>
+                  <div className="detail-item">
+                    <span className="label"><FaCar /> Voitures:</span>
+                    <span className="value">{selectedAgence.totalVoitures ?? 0}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label"><FaMotorcycle /> Motos:</span>
+                    <span className="value">{selectedAgence.totalMotos ?? 0}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Total Véhicules:</span>
+                    <span className="value">{selectedAgence.totalVehicules ?? 0}</span>
+                  </div>
+                </div>
+              )}
 
               {selectedAgence.agent && (
                 <div className="agent-info-section">

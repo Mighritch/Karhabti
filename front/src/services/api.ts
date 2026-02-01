@@ -5,7 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // garde-le si tu veux cookies ou auth plus tard
+  timeout: 10000,           // ← évite les attentes infinies
 });
 
 api.interceptors.request.use(
@@ -17,6 +17,15 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Intercepteur de réponse utile pour debug
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('Erreur API :', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
 );
 
 export default api;

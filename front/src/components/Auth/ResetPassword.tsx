@@ -1,75 +1,94 @@
-import { useParams, useNavigate } from 'react-router-dom';
+// src/components/Auth/ResetPassword.tsx
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useEffect } from 'react';
 
 const schema = yup.object({
-  email: yup.string().email('Email invalide').required('L\'email est requis pour identifier votre compte'),
+  email: yup.string().email('Email invalide').required('Email requis'),
   password: yup.string().min(6, 'Au moins 6 caractères').required('Requis'),
   confirmPassword: yup.string()
     .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas')
-    .required('Requis'),
+    .required('Confirmation requise'),
 }).required();
 
 export default function ResetPassword() {
-  const { token } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  const { register, handleSubmit, formState: { errors } } = useForm({
+
+  const prefilledEmail = searchParams.get('email') || '';
+
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: { email: prefilledEmail },
   });
+
+  useEffect(() => {
+    if (prefilledEmail) setValue('email', prefilledEmail);
+  }, [prefilledEmail, setValue]);
 
   const onSubmit = async (data: any) => {
     try {
-      // On appelle l'API de réinitialisation directe
-      const response = await fetch(`http://localhost:5000/api/users/direct-reset`, {
+      const res = await fetch('http://localhost:5000/api/users/direct-reset', {   // ← bonne URL
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: data.email,
-          password: data.password
+          password: data.password,           // ← backend attend "password" ici
         }),
       });
 
-      if (response.ok) {
-        toast.success('Mot de passe mis à jour avec succès !');
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success('Mot de passe modifié avec succès !');
         navigate('/login');
       } else {
-        const resData = await response.json();
-        toast.error(resData.message || 'Erreur : Utilisateur non trouvé');
+        toast.error(result.message || 'Erreur lors de la réinitialisation');
       }
     } catch (err) {
-      toast.error('Erreur de connexion au serveur');
+      toast.error('Erreur réseau ou serveur');
     }
   };
 
   return (
     <div className="auth-form">
       <h2>Réinitialiser le mot de passe</h2>
-      <p style={{ fontSize: '0.9rem', marginBottom: '1rem', color: '#666' }}>
-        Saisissez votre email et votre nouveau mot de passe.
-      </p>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="form-group">
-          <label>Votre Email</label>
-          <input type="email" {...register('email')} placeholder="votre@email.com" />
+          <label>Email</label>
+          <input
+            type="email"
+            autoComplete="email"
+            {...register('email')}
+            disabled={!!prefilledEmail}
+          />
           {errors.email && <span className="error">{errors.email.message}</span>}
         </div>
 
         <div className="form-group">
           <label>Nouveau mot de passe</label>
-          <input type="password" {...register('password')} />
+          <input
+            type="password"
+            autoComplete="new-password"           // ← recommandé pour reset
+            {...register('password')}
+          />
           {errors.password && <span className="error">{errors.password.message}</span>}
         </div>
 
         <div className="form-group">
-          <label>Confirmer le mot de passe</label>
-          <input type="password" {...register('confirmPassword')} />
+          <label>Confirmation</label>
+          <input
+            type="password"
+            autoComplete="new-password"
+            {...register('confirmPassword')}
+          />
           {errors.confirmPassword && <span className="error">{errors.confirmPassword.message}</span>}
         </div>
 
-        <button type="submit">Enregistrer les changements</button>
+        <button type="submit">Enregistrer</button>
       </form>
     </div>
   );

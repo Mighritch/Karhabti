@@ -27,6 +27,7 @@ interface VehiculeListProps {
   typeVehicule: 'voiture' | 'moto';
   onClose: () => void;
   onAddClick: () => void;
+  isAdminView?: boolean;
 }
 
 export default function VehiculeList({
@@ -34,6 +35,7 @@ export default function VehiculeList({
   typeVehicule,
   onClose,
   onAddClick,
+  isAdminView = false,
 }: VehiculeListProps) {
   const { token } = useAuth();
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
@@ -105,10 +107,13 @@ export default function VehiculeList({
           {typeVehicule === 'voiture' ? <FaCar /> : <FaMotorcycle />}
           Véhicules de l'agence
         </h2>
+
         <div className="header-actions">
-          <button className="btn-add-inline" onClick={onAddClick}>
-            <FaPlus /> Ajouter
-          </button>
+          {!isAdminView && (
+            <button className="btn-add-inline" onClick={onAddClick}>
+              <FaPlus /> Ajouter
+            </button>
+          )}
           <button className="btn-close" onClick={onClose}>
             ×
           </button>
@@ -134,9 +139,11 @@ export default function VehiculeList({
       ) : vehicules.length === 0 ? (
         <div className="empty-state">
           <p>Aucun véhicule trouvé dans cette agence.</p>
-          <button className="btn-create-first" onClick={onAddClick}>
-            Ajouter mon premier véhicule
-          </button>
+          {!isAdminView && (
+            <button className="btn-create-first" onClick={onAddClick}>
+              Ajouter mon premier véhicule
+            </button>
+          )}
         </div>
       ) : (
         <div className="vehicule-grid">
@@ -198,20 +205,24 @@ export default function VehiculeList({
                   </p>
 
                   <div className="card-actions">
-                    <button
-                      className="btn-edit"
-                      style={{ flex: 1 }}
-                      onClick={() => handleEdit(v)}
-                    >
-                      <FaEdit /> Modifier
-                    </button>
-                    <button
-                      className="btn-delete"
-                      style={{ flex: 1 }}
-                      onClick={() => handleDelete(v._id)}
-                    >
-                      <FaTrash /> Supprimer
-                    </button>
+                    {!isAdminView && (
+                      <>
+                        <button
+                          className="btn-edit"
+                          style={{ flex: 1 }}
+                          onClick={() => handleEdit(v)}
+                        >
+                          <FaEdit /> Modifier
+                        </button>
+                        <button
+                          className="btn-delete"
+                          style={{ flex: 1 }}
+                          onClick={() => handleDelete(v._id)}
+                        >
+                          <FaTrash /> Supprimer
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
