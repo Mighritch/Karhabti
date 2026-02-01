@@ -75,6 +75,11 @@ export default function Login() {
             </button>
           </div>
           {errors.password && <span className="error">{errors.password.message}</span>}
+
+          <div className="forgot-link-container">
+            {/* On envoie vers reset-password avec un flag "direct" */}
+            <Link to="/reset-password/direct">Mot de passe oublié ?</Link>
+          </div>
         </div>
 
         <button type="submit" disabled={isSubmitting}>

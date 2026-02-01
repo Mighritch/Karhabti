@@ -10,6 +10,9 @@ import Profile from './components/Profile/Profile';
 import Agences from './components/Agence/Agences';
 import MesAgences from './components/Agence/MesAgences';
 import AdminAgences from './components/Admin/AdminAgence';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
+
 
 import { Toaster } from 'react-hot-toast';
 
@@ -27,6 +30,8 @@ function App() {
               {/* Pages d'authentification centrées */}
               <Route path="/login" element={<CenteredAuth><Login /></CenteredAuth>} />
               <Route path="/register" element={<CenteredAuth><Register /></CenteredAuth>} />
+              <Route path="/forgot-password" element={<CenteredAuth><ForgotPassword /></CenteredAuth>} />
+              <Route path="/reset-password/:token" element={<CenteredAuth><ResetPassword /></CenteredAuth>} />
 
               {/* Routes protégées */}
               <Route element={<ProtectedRoute />}>
