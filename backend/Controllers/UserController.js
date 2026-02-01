@@ -1,3 +1,4 @@
+// controllers/UserController.js
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
@@ -80,27 +81,18 @@ exports.signin = async (req, res) => {
     const { email, mdp } = req.body;
 
     if (!email || !mdp) {
-      return res.status(400).json({
-        success: false,
-        message: 'Veuillez fournir email et mot de passe'
-      });
+      return res.status(400).json({ success: false, message: 'Email et mot de passe requis' });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() }).select('+mdp');
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Email ou mot de passe incorrect'
-      });
+      return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
     }
 
     const isMatch = await user.comparerMotDePasse(mdp);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Email ou mot de passe incorrect'
-      });
+      return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
     }
 
     const token = generateToken(user);
@@ -118,12 +110,8 @@ exports.signin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Erreur connexion :', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur lors de la connexion',
-      error: error.message
-    });
+    console.error('Erreur signin:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 };
 
@@ -249,20 +237,37 @@ exports.directReset = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Aucun utilisateur trouvé avec cet email" });
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email et nouveau mot de passe requis'
+      });
     }
 
-    user.mdp = password;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Optionnel : tu peux ajouter une vérification (ex: IP, rate-limit, ancien mot de passe, etc.) en prod
+    user.mdp = password;          // ← le middleware pre('save') va hasher automatiquement
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
     await user.save();
 
-    res.status(200).json({ success: true, message: "Mot de passe modifié" });
+    res.status(200).json({
+      success: true,
+      message: 'Mot de passe modifié avec succès'
+    });
   } catch (error) {
     console.error('Erreur directReset :', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la réinitialisation directe'
+    });
   }
 };

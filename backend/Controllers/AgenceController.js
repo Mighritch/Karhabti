@@ -1,4 +1,6 @@
 const Agence = require('../models/Agence');
+const Voiture = require('../models/Voiture'); // Ajout pour compter les voitures
+const Moto = require('../models/Moto'); // Ajout pour compter les motos
 const { validationResult } = require('express-validator');
 
 const createAgence = async (req, res) => {
@@ -67,7 +69,21 @@ const getMyAgence = async (req, res) => {
     }
 
     const query = req.user.role === 'admin' ? {} : { agent: req.user._id };
-    const agences = await Agence.find(query).populate('agent', 'nom prenom email');
+    let agences = await Agence.find(query).populate('agent', 'nom prenom email');
+
+    // Ajout des counts de véhicules pour chaque agence
+    agences = await Promise.all(agences.map(async (agence) => {
+      const totalVoitures = await Voiture.countDocuments({ agence: agence._id });
+      const totalMotos = await Moto.countDocuments({ agence: agence._id });
+      const totalVehicules = totalVoitures + totalMotos;
+
+      return {
+        ...agence.toObject(), // Convertit en objet plain pour ajouter des propriétés
+        totalVoitures,
+        totalMotos,
+        totalVehicules
+      };
+    }));
 
     res.status(200).json({
       success: true,
@@ -145,11 +161,10 @@ const approveAgence = async (req, res) => {
     }
 
     const { status } = req.body;
-
     if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Statut invalide. Doit être "approved" ou "rejected"'
+        message: 'Statut invalide (approved ou rejected)'
       });
     }
 

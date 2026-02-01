@@ -7,15 +7,9 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const USE_AI_PROVIDER = (process.env.USE_AI_PROVIDER || 'gemini').toLowerCase();
 
-// ────────────────────────────────────────────────
-// Helpers
-// ────────────────────────────────────────────────
 const timeoutPromise = (ms, msg = 'Timeout') =>
   new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
 
-// ────────────────────────────────────────────────
-// CRUD – VOITURES
-// ────────────────────────────────────────────────
 const createVoiture = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -25,7 +19,6 @@ const createVoiture = async (req, res) => {
 
     const data = { ...req.body };
 
-    // Conversion booléens
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia']
       .forEach(k => {
         if (data[k] !== undefined) {
@@ -33,7 +26,6 @@ const createVoiture = async (req, res) => {
         }
       });
 
-    // Conversion nombres
     ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix']
       .forEach(k => {
         if (data[k] !== undefined && data[k] !== '') {
@@ -71,7 +63,6 @@ const updateVoiture = async (req, res) => {
 
     const data = { ...req.body };
 
-    // Conversions similaires à create
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia']
       .forEach(k => {
         if (data[k] !== undefined) {
@@ -87,19 +78,13 @@ const updateVoiture = async (req, res) => {
         }
       });
 
-    // Trouver la voiture existante
     const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
     if (!voiture) {
       return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
     }
 
-    // Mise à jour des champs
     Object.assign(voiture, data);
-
-    // Ajouter nouvelles images aux existantes (pas de suppression automatique ici)
     voiture.images = [...voiture.images, ...newImages];
-
-    // Mise à jour timestamp
     voiture.updatedAt = Date.now();
 
     await voiture.save();
@@ -119,9 +104,6 @@ const updateVoiture = async (req, res) => {
   }
 };
 
-// ────────────────────────────────────────────────
-// CRUD – MOTOS
-// ────────────────────────────────────────────────
 const createMoto = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -176,19 +158,13 @@ const updateMoto = async (req, res) => {
         }
       });
 
-    // Trouver la moto existante
     const moto = await Moto.findOne({ _id: req.params.id, agence: req.agence._id });
     if (!moto) {
       return res.status(404).json({ success: false, message: 'Moto non trouvée' });
     }
 
-    // Mise à jour des champs
     Object.assign(moto, data);
-
-    // Ajouter nouvelles images aux existantes
     moto.images = [...moto.images, ...newImages];
-
-    // Mise à jour timestamp
     moto.updatedAt = Date.now();
 
     await moto.save();
@@ -208,9 +184,6 @@ const updateMoto = async (req, res) => {
   }
 };
 
-// ────────────────────────────────────────────────
-// Autres fonctions CRUD & utilitaires
-// ────────────────────────────────────────────────
 const getMyVoitures = async (req, res) => {
   try {
     const voitures = await Voiture.find({ agence: req.agence._id })
@@ -245,15 +218,10 @@ const getMyMotos = async (req, res) => {
 
 const deleteVoiture = async (req, res) => {
   try {
-    const voiture = await Voiture.findOneAndDelete({
-      _id: req.params.id,
-      agence: req.agence._id
-    });
-
+    const voiture = await Voiture.findOneAndDelete({ _id: req.params.id, agence: req.agence._id });
     if (!voiture) {
       return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
     }
-
     res.json({ success: true, message: 'Voiture supprimée avec succès' });
   } catch (err) {
     console.error('deleteVoiture error:', err);
@@ -263,15 +231,10 @@ const deleteVoiture = async (req, res) => {
 
 const deleteMoto = async (req, res) => {
   try {
-    const moto = await Moto.findOneAndDelete({
-      _id: req.params.id,
-      agence: req.agence._id
-    });
-
+    const moto = await Moto.findOneAndDelete({ _id: req.params.id, agence: req.agence._id });
     if (!moto) {
       return res.status(404).json({ success: false, message: 'Moto non trouvée' });
     }
-
     res.json({ success: true, message: 'Moto supprimée avec succès' });
   } catch (err) {
     console.error('deleteMoto error:', err);
@@ -279,32 +242,20 @@ const deleteMoto = async (req, res) => {
   }
 };
 
-// ────────────────────────────────────────────────
-// SUGGEST MODELS (marque → liste de modèles)
-// ────────────────────────────────────────────────
 const suggestModels = async (req, res) => {
   try {
     const { marque, type = 'véhicule' } = req.body;
-
     if (!marque?.trim()) {
       return res.status(400).json({ success: false, message: 'La marque est requise' });
     }
 
-    const prompt = `Liste de 8 à 12 modèles populaires pour la marque "${marque}" (${type}).
-Réponds **uniquement** avec un JSON valide :
-{ "models": ["Modèle 1", "Modèle 2", ...] }`;
+    const prompt = `Liste de 8 à 12 modèles populaires pour la marque "${marque}" (${type}). Réponds **uniquement** avec un JSON valide : { "models": ["Modèle 1", "Modèle 2", ...] }`;
 
     if (USE_AI_PROVIDER !== 'gemini') {
-      return res.status(503).json({
-        success: false,
-        message: 'Seul le provider Gemini est supporté dans cette version'
-      });
+      return res.status(503).json({ success: false, message: 'Seul le provider Gemini est supporté dans cette version' });
     }
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
 
     const result = await Promise.race([
       timeoutPromise(12000, 'Timeout suggestion modèles'),
@@ -317,92 +268,48 @@ Réponds **uniquement** avec un JSON valide :
     res.json({ success: true, data: models });
   } catch (err) {
     console.error('suggestModels error:', err);
-
-    let message = 'Service de suggestion temporairement indisponible';
-    let status = 503;
-
-    if (err.message.includes('Timeout')) {
-      message = 'Délai dépassé – réessayez plus tard';
-    } else if (err.status === 404 || err.message.toLowerCase().includes('not found')) {
-      message = 'Modèle Gemini non disponible. Vérifiez votre clé API ou essayez "gemini-2.5-flash-latest"';
-      status = 400;
-    }
-
-    res.status(status).json({ success: false, message });
+    res.status(500).json({ success: false, message: 'Erreur suggestion modèles' });
   }
 };
 
-// ────────────────────────────────────────────────
-// SUGGEST FROM IMAGE (Gemini – vision)
-// ────────────────────────────────────────────────
 const suggestFromImage = async (req, res) => {
-  let filePath = null;
-
   try {
-    if (!req.files?.length) {
+    const filePath = req.file?.path;
+    if (!filePath) {
       return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
 
-    const file = req.files[0];
-    filePath = file.path;
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64Image = imageBuffer.toString('base64');
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(500).json({ success: false, message: 'Fichier image introuvable' });
-    }
+    const prompt = `Analyse cette image de véhicule et fournis les informations suivantes en JSON :
+    {
+      "marque": "nom de la marque",
+      "modele": "nom du modèle précis",
+      "annee": estimation de l'année (nombre),
+      "type": "Voiture" ou "Moto",
+      "description": "bref descriptif commercial",
+      "prixEstime": estimation prix en euros (nombre),
+      "confiance": score entre 0 et 1
+    }`;
 
-    const stats = fs.statSync(filePath);
-    if (stats.size > 5 * 1024 * 1024) {
-      fs.unlinkSync(filePath);
-      return res.status(400).json({ success: false, message: 'Image trop volumineuse (max 5 Mo)' });
-    }
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
 
-    const base64Image = fs.readFileSync(filePath).toString('base64');
-    const mimeType = file.mimetype || 'image/jpeg';
-
-    const prompt = `Tu es un expert en reconnaissance automobile et moto, spécialisé dans le marché tunisien (Tunisie 2025-2026).
-Analyse cette image UNIQUE et retourne **UNIQUEMENT** un JSON valide :
-{
-  "marque": "Toyota | Peugeot | Renault | Hyundai | Kia | Volkswagen | ... | Inconnu",
-  "modele": "208 | Clio | Symbol | Polo | Tucson | Duster | ... | ",
-  "type": "Citadine | Berline | SUV / Crossover | Compacte | Monospace | Routière | Sportive | Scooter | ...",
-  "couleur": "Noir | Blanc | Gris | Argent | Bleu | Rouge | Beige | ... | Inconnu",
-  "prixEstime": 45000,
-  "confiance": 0.92
-}
-Important :
-- "prixEstime" doit être une estimation réaliste du prix de vente actuel en Tunisie en DINARS TUNISIENS (TND), nombre entier, sans décimales, adapté au marché local occasion/neuf en 2026.
-- Ne mets jamais de symbole € ou $ ou devise autre que le nombre brut.
-- Si tu ne reconnais pas bien le véhicule, mets un prix très approximatif ou 0 et baisse fortement "confiance".`;
-
-    if (USE_AI_PROVIDER !== 'gemini') {
-      return res.status(503).json({
-        success: false,
-        message: 'Seul le provider Gemini est supporté dans cette version'
-      });
-    }
-
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
-
-    const genResult = await Promise.race([
-      timeoutPromise(60000, 'Timeout analyse image'),
+    const result = await Promise.race([
+      timeoutPromise(20000, 'Timeout analyse image'),
       model.generateContent([
-        { inlineData: { mimeType, data: base64Image } },
-        { text: prompt }
+        prompt,
+        { inlineData: { data: base64Image, mimeType: req.file.mimetype } }
       ])
     ]);
 
-    const detected = JSON.parse(genResult.response.text());
+    const detected = JSON.parse(result.response.text());
 
-    // Sécurité sur le score de confiance
     detected.confiance = Number(detected.confiance) || 0.45;
     if (detected.confiance < 0 || detected.confiance > 1) {
       detected.confiance = 0.45;
     }
 
-    // Sécurité sur prixEstime
     detected.prixEstime = Number(detected.prixEstime) || 0;
     if (detected.prixEstime < 0) {
       detected.prixEstime = 0;
@@ -427,14 +334,31 @@ Important :
       status = 504;
     } else if (err.status === 404 || err.message.toLowerCase().includes('not found')) {
       message = 'Modèle Gemini non disponible. Vérifiez votre clé API ou essayez "gemini-2.5-flash-latest"';
-      status = 400;
+      status = 404;
     }
 
-    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    res.status(status).json({ success: false, message, error: err.message });
+  }
+};
 
-    res.status(status).json({
+const getGlobalStats = async (req, res) => {
+  try {
+    const totalVoitures = await Voiture.countDocuments();
+    const totalMotos    = await Moto.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalVoitures,
+        totalMotos,
+        totalVehicules: totalVoitures + totalMotos
+      }
+    });
+  } catch (err) {
+    console.error('getGlobalStats error:', err);
+    res.status(500).json({
       success: false,
-      message,
+      message: 'Erreur lors de la récupération des statistiques globales',
       error: err.message
     });
   }
@@ -450,5 +374,6 @@ module.exports = {
   deleteVoiture,
   deleteMoto,
   suggestModels,
-  suggestFromImage
+  suggestFromImage,
+  getGlobalStats
 };

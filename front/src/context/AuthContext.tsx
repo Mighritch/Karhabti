@@ -1,9 +1,7 @@
+// src/context/AuthContext.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import api from '../services/api';
 
-// ────────────────────────────────────────────────
-// Interface pour l'utilisateur connecté
-// ────────────────────────────────────────────────
 interface User {
   id: string;
   nom: string;
@@ -15,9 +13,6 @@ interface User {
   isPremium?: boolean;
 }
 
-// ────────────────────────────────────────────────
-// Données attendues pour l'inscription (maintenant avec role)
-// ────────────────────────────────────────────────
 export interface RegisterData {
   nom: string;
   prenom: string;
@@ -25,12 +20,9 @@ export interface RegisterData {
   telephone: string;
   email: string;
   mdp: string;
-  role: 'user' | 'agent' | 'admin';     // ← ajouté et rendu obligatoire
+  role: 'user' | 'agent' | 'admin';
 }
 
-// ────────────────────────────────────────────────
-// Type du contexte d'authentification
-// ────────────────────────────────────────────────
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -47,24 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Chargement automatique de l'utilisateur au montage (si token présent)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        const storedToken = localStorage.getItem('token');
+        if (!storedToken) {
           setLoading(false);
           return;
         }
 
-        // Configuration du token pour toutes les requêtes futures
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
 
         const res = await api.get('/users/me');
         setUser(res.data.user);
-        setToken(token);
+        setToken(storedToken);
       } catch (err) {
-        console.error('Erreur lors du chargement utilisateur :', err);
+        console.error("Erreur lors du chargement de l'utilisateur :", err);
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
@@ -77,10 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  // ─── Connexion ───
   const login = async (email: string, password: string) => {
     try {
-      const res = await api.post('/users/signin', { email, mdp: password });
+      const res = await api.post('/users/signin', {
+        email,
+        mdp: password, // mapping correct
+      });
+
       const { token, user } = res.data;
 
       localStorage.setItem('token', token);
@@ -88,12 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(token);
       setUser(user);
     } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Erreur de connexion');
+      throw new Error(
+        err.response?.data?.message ||
+        err.message ||
+        'Erreur de connexion – vérifiez email/mot de passe'
+      );
     }
   };
 
-  // ─── Inscription ───
-  const registerUser = async (data: RegisterData) => {
+  const register = async (data: RegisterData) => {
     try {
       const res = await api.post('/users/signup', data);
       const { token, user } = res.data;
@@ -103,11 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(token);
       setUser(user);
     } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Erreur lors de l’inscription');
+      throw new Error(
+        err.response?.data?.message ||
+        'Erreur lors de l’inscription'
+      );
     }
   };
 
-  // ─── Déconnexion ───
   const logout = () => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
@@ -122,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         loading,
         login,
-        register: registerUser,
+        register,
         logout,
       }}
     >
@@ -131,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook personnalisé
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

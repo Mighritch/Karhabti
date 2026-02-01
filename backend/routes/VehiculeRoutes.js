@@ -14,7 +14,8 @@ const {
   deleteVoiture,
   deleteMoto,
   suggestModels,
-  suggestFromImage
+  suggestFromImage,
+  getGlobalStats
 } = require('../Controllers/VehiculeController');
 
 const upload = require('../middleware/upload');
@@ -39,6 +40,8 @@ router.get('/me/motos', requireApprovedAgency, getMyMotos);
 
 router.delete('/voitures/:id', requireApprovedAgency, deleteVoiture);
 router.delete('/motos/:id', requireApprovedAgency, deleteMoto);
+
+router.get('/stats', protect, getGlobalStats);
 
 router.get('/test-gemini-models', requireApprovedAgency, async (req, res) => {
   try {
