@@ -47,6 +47,10 @@ function App() {
               <Route path="/agences" element={<Agences />} />
               <Route path="/mes-agences" element={<MesAgences />} />
 
+              <Route path="/vehicules-neufs"     element={<div className="placeholder-page">Véhicules Neufs – Page en construction</div>} />
+<Route path="/vehicules-occasion"  element={<div className="placeholder-page">Véhicules d'Occasion – Page en construction</div>} />
+<Route path="/vehicules-location"  element={<div className="placeholder-page">Véhicules en Location – Page en construction</div>} />
+
               {/* 404 */}
               <Route path="*" element={<div className="not-found">404 — Page non trouvée</div>} />
             </Routes>
