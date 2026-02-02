@@ -78,6 +78,18 @@
   gap: 2rem;
 }
 
+.main-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-right: 2rem;
+}
+
+.main-nav-links .nav-link {
+  font-size: 1.05rem;
+  padding: 0.7rem 1.3rem;
+}
+
 .auth-links {
   display: flex;
   gap: 1.8rem;
@@ -164,7 +176,6 @@
   box-shadow: 0 12px 30px rgba(100, 108, 255, 0.4);
 }
 
-/* ── NOUVELLE SECTION UTILISATEUR ── */
 .user-section {
   display: flex;
   align-items: center;
@@ -231,7 +242,6 @@
   box-shadow: 0 8px 25px rgba(100, 108, 255, 0.35);
 }
 
-/* Styles pour le lien vers le profil */
 .profile-link {
   color: #b0b4ff;
   border: 2px solid rgba(160, 160, 255, 0.4);
@@ -263,7 +273,6 @@
   box-shadow: 0 0 20px rgba(100, 80, 255, 0.4);
 }
 
-/* Animation pour les liens actifs */
 .nav-link.active {
   animation: pulse-glow 2s infinite;
 }
@@ -277,7 +286,6 @@
   }
 }
 
-/* ── MENU HAMBURGER - visible uniquement sur petits écrans ── */
 .menu-toggle {
   display: none;
   background: none;
@@ -292,12 +300,10 @@
   filter: drop-shadow(0 0 6px rgba(100, 108, 255, 0.6));
 }
 
-/* Quand le menu est ouvert sur mobile */
 .header-nav {
   transition: all 0.4s ease;
 }
 
-/* ── MOBILE / TABLETTE ── */
 @media (max-width: 900px) {
   .menu-toggle {
     display: block;
@@ -328,6 +334,21 @@
     pointer-events: auto;
   }
 
+  .main-nav-links {
+    flex-direction: column;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(100, 108, 255, 0.2);
+    padding-bottom: 1rem;
+  }
+
+  .main-nav-links .nav-link {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
   .user-section,
   .auth-links {
     flex-direction: column;
@@ -348,8 +369,7 @@
 
   .nav-link,
   .logout-btn,
-  .profile-link,
-  .agence-link {
+  .profile-link {
     width: 100%;
     text-align: center;
     justify-content: center;
@@ -361,7 +381,6 @@
   }
 }
 
-/* ── RESPONSIVE (autres tailles) ── */
 @media (max-width: 1024px) {
   .header-container {
     padding: 1rem 2rem;
