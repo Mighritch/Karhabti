@@ -165,15 +165,7 @@ export default function Register() {
               />
               <label htmlFor="role-agent" className="choice-label">Agent</label>
             </div>
-            <div className="choice-item">
-              <input
-                type="radio"
-                id="role-admin"
-                value="admin"
-                {...registerField('role')}
-              />
-              <label htmlFor="role-admin" className="choice-label">Administrateur</label>
-            </div>
+            
           </div>
           {errors.role && <span className="error">{errors.role.message}</span>}
         </div>
