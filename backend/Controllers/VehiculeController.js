@@ -274,7 +274,10 @@ const suggestModels = async (req, res) => {
 
 const suggestFromImage = async (req, res) => {
   try {
-    const filePath = req.file?.path;
+    // Support both single and array uploads (route uses upload.array(..., 1))
+    const file = req.file || (Array.isArray(req.files) ? req.files[0] : undefined);
+    const filePath = file?.path;
+
     if (!filePath) {
       return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
@@ -282,15 +285,21 @@ const suggestFromImage = async (req, res) => {
     const imageBuffer = fs.readFileSync(filePath);
     const base64Image = imageBuffer.toString('base64');
 
-    const prompt = `Analyse cette image de véhicule et fournis les informations suivantes en JSON :
+    const prompt = `Analyse cette image de véhicule et fournis **uniquement** un JSON propre avec les champs suivants si disponibles :
     {
-      "marque": "nom de la marque",
-      "modele": "nom du modèle précis",
-      "annee": estimation de l'année (nombre),
-      "type": "Voiture" ou "Moto",
-      "description": "bref descriptif commercial",
-      "prixEstime": estimation prix en euros (nombre),
-      "confiance": score entre 0 et 1
+      "marque": "string",
+      "modele": "string",
+      "annee": nombre,
+      "type": "Voiture" | "Moto",
+      "couleur": "string",
+      "puissance": nombre (ch ou kW),
+      "cylindre": nombre (cc),
+      "kilometrage": nombre (km),
+      "etat": "neuf" | "occasion",
+      "categorie": "string (si voiture)",
+      "prixEstime": nombre (estimation en TND),
+      "description": "string",
+      "confiance": nombre (0-1)
     }`;
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
@@ -299,21 +308,28 @@ const suggestFromImage = async (req, res) => {
       timeoutPromise(20000, 'Timeout analyse image'),
       model.generateContent([
         prompt,
-        { inlineData: { data: base64Image, mimeType: req.file.mimetype } }
+        { inlineData: { data: base64Image, mimeType: file.mimetype } }
       ])
     ]);
 
-    const detected = JSON.parse(result.response.text());
+    const detectedRaw = JSON.parse(result.response.text());
 
-    detected.confiance = Number(detected.confiance) || 0.45;
-    if (detected.confiance < 0 || detected.confiance > 1) {
-      detected.confiance = 0.45;
-    }
-
-    detected.prixEstime = Number(detected.prixEstime) || 0;
-    if (detected.prixEstime < 0) {
-      detected.prixEstime = 0;
-    }
+    // Normalise et mappe les champs possibles
+    const detected = {
+      marque: detectedRaw.marque || detectedRaw.brand || detectedRaw.make || '',
+      modele: detectedRaw.modele || detectedRaw.model || '',
+      annee: Number(detectedRaw.annee || detectedRaw.year) || undefined,
+      type: (detectedRaw.type || '').toString().toLowerCase().includes('moto') ? 'Moto' : 'Voiture',
+      couleur: detectedRaw.couleur || detectedRaw.color || '',
+      puissance: Number(detectedRaw.puissance || detectedRaw.power) || undefined,
+      cylindre: Number(detectedRaw.cylindre || detectedRaw.displacement) || undefined,
+      kilometrage: Number(detectedRaw.kilometrage || detectedRaw.mileage) || undefined,
+      etat: ((detectedRaw.etat || detectedRaw.condition || '') .toString().toLowerCase().includes('neuf')) ? 'neuf' : ((detectedRaw.etat || detectedRaw.condition || '').toString().toLowerCase().includes('occasion') ? 'occasion' : undefined),
+      categorie: detectedRaw.categorie || detectedRaw.category || '',
+      prixEstime: Math.max(0, Number(detectedRaw.prixEstime || detectedRaw.estimated_price || detectedRaw.price) || 0),
+      description: detectedRaw.description || '',
+      confiance: Math.max(0, Math.min(1, Number(detectedRaw.confiance || detectedRaw.confidence) || 0.45))
+    };
 
     if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
