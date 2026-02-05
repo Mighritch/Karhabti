@@ -1,8 +1,12 @@
 // src/pages/Dashboard.tsx
 import { useState, useEffect } from 'react';
-import { FaCar, FaMotorcycle } from 'react-icons/fa';
+import { FaCar, FaMotorcycle, FaPlus } from 'react-icons/fa';
 import api from '../services/api';
 import ProtectedRoute from '../components/ProtectedRoute'; // ou ton HOC de protection
+import { useAuth } from '../context/AuthContext';
+import AgenceForm from '../components/Agence/AgenceForm';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -11,6 +15,15 @@ export default function Dashboard() {
     totalVehicules: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleCreateSuccess = (newAgence: any) => {
+    setShowCreate(false);
+    toast.success('Agence créée avec succès');
+    navigate('/mes-agences');
+  }; 
 
   useEffect(() => {
     const fetchGlobalStats = async () => {
@@ -32,6 +45,22 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
       <h1>Bienvenue sur votre tableau de bord</h1>
+
+      {user?.role === 'agent' && (
+        <div className="dashboard-actions">
+          <button className="btn-create" onClick={() => setShowCreate(true)}>
+            <FaPlus /> Ajouter une agence
+          </button>
+        </div>
+      )}
+
+      {showCreate && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <AgenceForm onSuccess={handleCreateSuccess} onCancel={() => setShowCreate(false)} />
+          </div>
+        </div>
+      )} 
 
       <div className="stats-overview glass-card">
         <h2>Statistiques de la plateforme</h2>

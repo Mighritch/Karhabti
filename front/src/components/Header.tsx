@@ -28,7 +28,7 @@ export default function Header() {
   };
 
   const isActive = (path: string) =>
-    location.pathname.startsWith(path) ? 'active' : '';
+    location.pathname.startsWith(path) ? 'active' : ''; 
 
   // Déterminer si l'utilisateur est agent ou admin
   const isAgentOrAdmin = user && (user.role === 'agent' || user.role === 'admin');
@@ -114,15 +114,15 @@ export default function Header() {
               </div>
 
               {user.role === 'agent' && (
-                <Link
-                  to="/mes-agences"
-                  className={`nav-link agence-link ${isActive('/mes-agences')}`}
-                  onClick={closeMenu}
-                >
-                  <FaBuilding className="nav-icon" />
-                  <span>Mes Agences</span>
-                </Link>
-              )}
+                  <Link
+                    to="/mes-agences"
+                    className={`nav-link agence-link ${isActive('/mes-agences')}`}
+                    onClick={closeMenu}
+                  >
+                    <FaBuilding className="nav-icon" />
+                    <span>Mes Agences</span>
+                  </Link>
+              )} 
 
               {user.role === 'admin' && (
                 <Link
@@ -172,6 +172,7 @@ export default function Header() {
               </Link>
             </div>
           )}
+
         </nav>
       </div>
     </header>

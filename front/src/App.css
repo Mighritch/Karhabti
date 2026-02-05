@@ -377,6 +377,41 @@ button[type="submit"]:disabled {
   text-align: center;
 }
 
+/* Shared modal for header/dashboard */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 14px;
+}
+
+/* Small inline create button used in header */
+.btn-create-inline {
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg,#646cff,#7b5eff);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items:center;
+  gap: 0.6rem;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.btn-create-inline:hover{ transform: translateY(-2px); box-shadow: 0 8px 20px rgba(100,108,255,0.2); }
+
 .hero-content {
   max-width: 900px;
   z-index: 2;

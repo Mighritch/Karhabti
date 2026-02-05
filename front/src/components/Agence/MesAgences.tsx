@@ -156,7 +156,8 @@ export default function MesAgences() {
   }
 
   const isAdmin = user.role === 'admin';
-  const canCreate = !isAdmin && agences.length === 0;
+  // Autorise la création d'agence aux agents (visible sur la page)
+  const canCreate = user.role === 'agent';
 
   return (
     <div className="mes-agences-page">

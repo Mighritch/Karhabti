@@ -55,9 +55,16 @@ interface VehiculeFormData {
 interface AiSuggestions {
   marque?: string;
   modele?: string;
+  annee?: number;
   type?: string;
   couleur?: string;
   prixEstime?: number;
+  puissance?: number;
+  cylindre?: number;
+  kilometrage?: number;
+  etat?: string;
+  categorie?: string;
+  description?: string;
   confiance?: number;
 }
 
@@ -126,6 +133,30 @@ export default function VehiculeForm({
     };
   }, [images]);
 
+  const applyAllSuggestions = (s: AiSuggestions) => {
+    const mapping: Partial<VehiculeFormData> = {};
+
+    if (s.marque) mapping.marque = s.marque;
+    if (s.modele) mapping.modele = s.modele;
+    if (s.annee) mapping.annee = Number(s.annee);
+    if (s.couleur) mapping.couleur = s.couleur;
+    if (s.prixEstime !== undefined) mapping.prix = Number(s.prixEstime);
+    if (s.puissance !== undefined) mapping.puissance = Number(s.puissance);
+    if (s.cylindre !== undefined) mapping.cylindre = Number(s.cylindre);
+    if (s.kilometrage !== undefined) mapping.kilometrage = Number(s.kilometrage);
+    if (s.etat) {
+      const et = s.etat.toString().toLowerCase();
+      mapping.etat = et.includes('neuf') ? 'neuf' : et.includes('occasion') ? 'occasion' : mapping.etat;
+    }
+    if (s.type) {
+      if (typeVehicule === 'voiture') mapping.categorie = s.type;
+      else mapping.typeMoto = s.type;
+    }
+    if (s.categorie) mapping.categorie = s.categorie;
+
+    setFormData((prev) => ({ ...prev, ...mapping }));
+  };
+
   const handleMagicAI = async () => {
     if (images.length === 0 || analyzing) return;
     setAnalyzing(true);
@@ -147,7 +178,6 @@ export default function VehiculeForm({
       const res = await api.post('/vehicules/suggest-from-image', formDataImage, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
         timeout: 95000,
       });
@@ -155,6 +185,10 @@ export default function VehiculeForm({
       if (res.data.success) {
         setAiSuggestions(res.data.data);
         const confiance = res.data.data.confiance || 0;
+        // Auto-apply si la confiance est suffisante
+        if (confiance >= 0.6) {
+          applyAllSuggestions(res.data.data);
+        }
         if (confiance < 0.60) {
           setError(`Détection peu fiable (${Math.round(confiance * 100)}%) – vérifiez manuellement`);
         }
@@ -255,7 +289,6 @@ export default function VehiculeForm({
       const res = await method(endpoint, data, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
       });
 
@@ -317,13 +350,22 @@ export default function VehiculeForm({
                 ) : null
               )}
             </div>
-            <button
-              type="button"
-              className="btn-clear-ai"
-              onClick={() => setAiSuggestions(null)}
-            >
-              Ignorer suggestions
-            </button>
+            <div className="ai-actions">
+              <button
+                type="button"
+                className="btn-apply-all"
+                onClick={() => applyAllSuggestions(aiSuggestions)}
+              >
+                Remplir tout
+              </button>
+              <button
+                type="button"
+                className="btn-clear-ai"
+                onClick={() => setAiSuggestions(null)}
+              >
+                Ignorer suggestions
+              </button>
+            </div>
           </div>
         )}
 
