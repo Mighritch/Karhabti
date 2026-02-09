@@ -8,15 +8,14 @@ const {
   getPendingAgences,
   approveAgence,
   updateAgence,
-  deleteAgence
-} = require('../controllers/AgenceController');
+  deleteAgence,
+  getPublicAgences  // MODIFICATION AJOUTÉE: Import de la nouvelle fonction
+} = require('../Controllers/AgenceController');
 
 const { protect, authorize } = require('../middleware/auth');
 const { body } = require('express-validator');
 
-// ────────────────────────────────────────────────
-//  VALIDATION pour la création d'agence
-// ────────────────────────────────────────────────
+
 const createAgenceValidator = [
   body('nom').trim().notEmpty().withMessage('Le nom est requis'),
   body('ville').trim().notEmpty().withMessage('La ville est requise'),
@@ -58,6 +57,6 @@ router.put('/:id/approve', protect, authorize('admin'), approveAgence);
 // ────────────────────────────────────────────────
 //  ROUTES PUBLIQUES (optionnel – à activer plus tard)
 // ────────────────────────────────────────────────
-// router.get('/public', getPublicAgences);  // exemple futur
+router.get('/public', getPublicAgences);  // MODIFICATION AJOUTÉE: Activation de la route publique pour les users normaux
 
 module.exports = router;

@@ -1,3 +1,4 @@
+// backend/controllers/VehiculeController.js (modified)
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
 const fs = require('fs');
@@ -196,7 +197,7 @@ const getMyVoitures = async (req, res) => {
     });
   } catch (err) {
     console.error('getMyVoitures error:', err);
-    res.status(500).json({ success: false, message: 'Erreur récupération voitures' });
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des voitures' });
   }
 };
 
@@ -212,17 +213,21 @@ const getMyMotos = async (req, res) => {
     });
   } catch (err) {
     console.error('getMyMotos error:', err);
-    res.status(500).json({ success: false, message: 'Erreur récupération motos' });
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des motos' });
   }
 };
 
 const deleteVoiture = async (req, res) => {
   try {
     const voiture = await Voiture.findOneAndDelete({ _id: req.params.id, agence: req.agence._id });
-    if (!voiture) {
-      return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
-    }
-    res.json({ success: true, message: 'Voiture supprimée avec succès' });
+    if (!voiture) return res.status(404).json({ success: false, message: 'Voiture non trouvée' });
+
+    voiture.images.forEach(img => {
+      const filePath = path.join(__dirname, '..', '..', 'public', img.url);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+
+    res.json({ success: true, message: 'Voiture supprimée' });
   } catch (err) {
     console.error('deleteVoiture error:', err);
     res.status(500).json({ success: false, message: 'Erreur suppression voiture' });
@@ -232,10 +237,14 @@ const deleteVoiture = async (req, res) => {
 const deleteMoto = async (req, res) => {
   try {
     const moto = await Moto.findOneAndDelete({ _id: req.params.id, agence: req.agence._id });
-    if (!moto) {
-      return res.status(404).json({ success: false, message: 'Moto non trouvée' });
-    }
-    res.json({ success: true, message: 'Moto supprimée avec succès' });
+    if (!moto) return res.status(404).json({ success: false, message: 'Moto non trouvée' });
+
+    moto.images.forEach(img => {
+      const filePath = path.join(__dirname, '..', '..', 'public', img.url);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+
+    res.json({ success: true, message: 'Moto supprimée' });
   } catch (err) {
     console.error('deleteMoto error:', err);
     res.status(500).json({ success: false, message: 'Erreur suppression moto' });
@@ -380,6 +389,43 @@ const getGlobalStats = async (req, res) => {
   }
 };
 
+// New function for searching vehicles (public)
+const searchVehicles = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query?.trim()) {
+      return res.status(400).json({ success: false, message: 'Requête de recherche requise' });
+    }
+
+    const searchQuery = {
+      $or: [
+        { marque: { $regex: query, $options: 'i' } },
+        { modele: { $regex: query, $options: 'i' } },
+        { immatriculation: { $regex: query, $options: 'i' } },
+        { categorie: { $regex: query, $options: 'i' } },
+        { typeMoto: { $regex: query, $options: 'i' } }
+      ]
+    };
+
+    // Fetch voitures and motos, populate agence, filter approved
+    const voitures = await Voiture.find(searchQuery).populate('agence');
+    const filteredVoitures = voitures.filter(v => v.agence?.statut === 'approuvee');
+
+    const motos = await Moto.find(searchQuery).populate('agence');
+    const filteredMotos = motos.filter(m => m.agence?.statut === 'approuvee');
+
+    res.json({
+      success: true,
+      voitures: filteredVoitures,
+      motos: filteredMotos,
+      total: filteredVoitures.length + filteredMotos.length
+    });
+  } catch (err) {
+    console.error('searchVehicles error:', err);
+    res.status(500).json({ success: false, message: 'Erreur lors de la recherche' });
+  }
+};
+
 module.exports = {
   createVoiture,
   updateVoiture,
@@ -391,5 +437,6 @@ module.exports = {
   deleteMoto,
   suggestModels,
   suggestFromImage,
-  getGlobalStats
+  getGlobalStats,
+  searchVehicles // New export
 };
