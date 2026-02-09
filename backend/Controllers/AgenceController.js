@@ -126,6 +126,27 @@ const getAllAgences = async (req, res) => {
   }
 };
 
+// MODIFICATION AJOUTÉE: Nouvelle fonction pour les agences publiques (seulement approved, sans détails agent)
+const getPublicAgences = async (req, res) => {
+  try {
+    // Récupère seulement les agences approuvées, sans populer l'agent pour la vue publique
+    const agences = await Agence.find({ status: 'approved' });
+
+    res.status(200).json({
+      success: true,
+      count: agences.length,
+      data: agences
+    });
+  } catch (error) {
+    console.error('Erreur getPublicAgences :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération des agences publiques',
+      error: error.message
+    });
+  }
+};
+
 const getPendingAgences = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -288,6 +309,7 @@ module.exports = {
   createAgence,
   getMyAgence,
   getAllAgences,
+  getPublicAgences,  // MODIFICATION AJOUTÉE: Export de la nouvelle fonction
   getPendingAgences,
   approveAgence,
   updateAgence,

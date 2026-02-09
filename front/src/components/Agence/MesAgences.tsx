@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { 
   FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, 
-  FaTrash, FaCheck, FaTimes, FaCar, FaMotorcycle, FaEye 
+  FaTrash, FaCheck, FaTimes, FaCar, FaMotorcycle, FaEye, FaMapMarkerAlt 
 } from 'react-icons/fa';
 import AgenceForm from './AgenceForm';
 import VehiculeForm from '../Vehicule/VehiculeForm';
@@ -249,6 +249,14 @@ export default function MesAgences() {
                     </button>
                   </>
                 )}
+                <a
+                  className="btn-map"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agence.adresse}, ${agence.ville}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaMapMarkerAlt /> Voir sur la carte
+                </a>
               </div>
 
               {agence.status === 'approved' && (
@@ -392,6 +400,7 @@ export default function MesAgences() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// backend/routes/VehiculeRoutes.js (modified)
 const express = require('express');
 const router = express.Router();
 
@@ -15,13 +16,17 @@ const {
   deleteMoto,
   suggestModels,
   suggestFromImage,
-  getGlobalStats
+  getGlobalStats,
+  searchVehicles // New import
 } = require('../Controllers/VehiculeController');
 
 const upload = require('../middleware/upload');
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+// Public route for search (added before protect)
+router.get('/search', searchVehicles);
 
 router.use(protect);
 
