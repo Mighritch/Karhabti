@@ -39,8 +39,14 @@ export default function Dashboard() {
       }
     };
 
-    fetchGlobalStats();
-  }, []);
+    // Ne charger les stats que si l'utilisateur est admin
+    if (user?.role === 'admin') {
+      fetchGlobalStats();
+    } else {
+      // Aucune requête nécessaire pour les non-admins
+      setLoading(false);
+    }
+  }, [user]);
 
   return (
     <div className="dashboard-page">
@@ -62,6 +68,7 @@ export default function Dashboard() {
         </div>
       )} 
 
+      {user?.role === 'admin' && (
       <div className="stats-overview glass-card">
         <h2>Statistiques de la plateforme</h2>
 
@@ -94,6 +101,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      )}
 
       {/* Le reste de ton dashboard : mes annonces, mes favoris, etc. */}
     </div>

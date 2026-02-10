@@ -1,4 +1,3 @@
-/* Bouton commun aux deux pages */
 .btn-create {
   padding: 0.9rem 1.8rem;
   background: linear-gradient(135deg, #646cff, #7b5eff);
@@ -19,10 +18,141 @@
   box-shadow: 0 8px 24px rgba(100, 108, 255, 0.4);
 }
 
-/* Grille commune */
 .agences-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.8rem;
   margin-top: 2rem;
+}
+
+.btn-details {
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.btn-details:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(76, 175, 80, 0.4);
+}
+
+.btn-close {
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, #f44336, #ef5350);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.25s ease;
+  width: 100%;
+}
+
+.btn-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(244, 67, 54, 0.4);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 14px;
+  padding: 2rem;
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+}
+
+.modal-content p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.agence-card p strong {
+  color: #c3b8ff;
+  margin-right: 6px;
+}
+
+.card-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-map,
+.btn-details {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-map {
+  background: rgba(100, 80, 255, 0.25);
+  color: #b3a6ff;
+  border: 1px solid rgba(123, 94, 255, 0.4);
+}
+
+.btn-map:hover {
+  background: rgba(123, 94, 255, 0.4);
+  color: white;
+}
+
+.btn-details {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+  border: none;
+}
+
+.btn-details:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(76, 175, 80, 0.35);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.detail-label {
+  color: #c3b8ff;
+  font-weight: 500;
+  min-width: 160px;
+}
+
+.value {
+  font-weight: 600;
+  color: white;
 }
