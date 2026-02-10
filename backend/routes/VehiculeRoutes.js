@@ -1,8 +1,7 @@
-// backend/routes/VehiculeRoutes.js (modified)
 const express = require('express');
 const router = express.Router();
 
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { requireApprovedAgency } = require('../middleware/agence');
 
 const {
@@ -17,7 +16,8 @@ const {
   suggestModels,
   suggestFromImage,
   getGlobalStats,
-  searchVehicles // New import
+  searchVehicles, // New import
+  getAllNeufsAVendre
 } = require('../Controllers/VehiculeController');
 
 const upload = require('../middleware/upload');
@@ -25,9 +25,9 @@ const upload = require('../middleware/upload');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Public route for search (added before protect)
+// Public routes (avant protect)
 router.get('/search', searchVehicles);
-
+router.get('/neufs-a-vendre', getAllNeufsAVendre);
 router.use(protect);
 
 router.post('/suggest-models', requireApprovedAgency, suggestModels);
@@ -46,7 +46,7 @@ router.get('/me/motos', requireApprovedAgency, getMyMotos);
 router.delete('/voitures/:id', requireApprovedAgency, deleteVoiture);
 router.delete('/motos/:id', requireApprovedAgency, deleteMoto);
 
-router.get('/stats', protect, getGlobalStats);
+router.get('/stats', protect, authorize('admin'), getGlobalStats);
 
 router.get('/test-gemini-models', requireApprovedAgency, async (req, res) => {
   try {

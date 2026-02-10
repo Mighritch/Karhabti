@@ -2,7 +2,7 @@
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiLogOut, FiUser, FiSettings, FiStar, FiMenu, FiX } from 'react-icons/fi';
-import { FaCar, FaBuilding, FaCarSide, FaHistory, FaKey } from 'react-icons/fa';
+import { FaBuilding } from 'react-icons/fa';
 import { useState } from 'react';
 import './Header.css';
 
@@ -28,19 +28,16 @@ export default function Header() {
   };
 
   const isActive = (path: string) =>
-    location.pathname.startsWith(path) ? 'active' : ''; 
+    location.pathname.startsWith(path) ? 'active' : '';
 
-  // Déterminer si l'utilisateur est agent ou admin
   const isAgentOrAdmin = user && (user.role === 'agent' || user.role === 'admin');
-
-  // Les liens grand public s'affichent si : pas connecté OU connecté mais PAS agent/admin
   const showPublicLinks = !user || (user && !isAgentOrAdmin);
 
   return (
     <header className="main-header">
       <div className="header-container">
         <Link to="/" className="logo" onClick={closeMenu}>
-          <FaCar
+          <FaBuilding
             style={{
               marginRight: '0.8rem',
               color: '#646cff',
@@ -61,36 +58,9 @@ export default function Header() {
         </button>
 
         <nav className={`header-nav ${isMenuOpen ? 'open' : ''}`}>
-          {/* Liens grand public (neufs, occasion, location, agences) */}
+          {/* Liens grand public → on ne garde que "Agences" */}
           {showPublicLinks && (
             <div className="main-nav-links">
-              <Link
-                to="/vehicules-neufs"
-                className={`nav-link ${isActive('/vehicules-neufs')}`}
-                onClick={closeMenu}
-              >
-                <FaCarSide className="nav-icon" />
-                <span>Véhicules Neufs</span>
-              </Link>
-
-              <Link
-                to="/vehicules-occasion"
-                className={`nav-link ${isActive('/vehicules-occasion')}`}
-                onClick={closeMenu}
-              >
-                <FaHistory className="nav-icon" />
-                <span>Occasion</span>
-              </Link>
-
-              <Link
-                to="/vehicules-location"
-                className={`nav-link ${isActive('/vehicules-location')}`}
-                onClick={closeMenu}
-              >
-                <FaKey className="nav-icon" />
-                <span>Location</span>
-              </Link>
-
               <Link
                 to="/agences"
                 className={`nav-link ${isActive('/agences')}`}
@@ -114,15 +84,15 @@ export default function Header() {
               </div>
 
               {user.role === 'agent' && (
-                  <Link
-                    to="/mes-agences"
-                    className={`nav-link agence-link ${isActive('/mes-agences')}`}
-                    onClick={closeMenu}
-                  >
-                    <FaBuilding className="nav-icon" />
-                    <span>Mes Agences</span>
-                  </Link>
-              )} 
+                <Link
+                  to="/mes-agences"
+                  className={`nav-link agence-link ${isActive('/mes-agences')}`}
+                  onClick={closeMenu}
+                >
+                  <FaBuilding className="nav-icon" />
+                  <span>Mes Agences</span>
+                </Link>
+              )}
 
               {user.role === 'admin' && (
                 <Link
@@ -172,7 +142,6 @@ export default function Header() {
               </Link>
             </div>
           )}
-
         </nav>
       </div>
     </header>
