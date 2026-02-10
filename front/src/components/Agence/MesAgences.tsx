@@ -35,6 +35,20 @@ export interface Agence {
   totalVehicules?: number;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+interface ErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 export default function MesAgences() {
   const { user, token } = useAuth();
 
@@ -46,6 +60,9 @@ export default function MesAgences() {
   const [showVehiculeList, setShowVehiculeList] = useState(false);
   const [selectedAgence, setSelectedAgence] = useState<Agence | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [typeAgence, setTypeAgence] = useState('');
+  const [typeVehicule, setTypeVehicule] = useState('');
+  const [etatVehicule, setEtatVehicule] = useState('');
 
   useEffect(() => {
     if (!user || (user.role !== 'agent' && user.role !== 'admin') || !token) {
@@ -56,14 +73,19 @@ export default function MesAgences() {
     const fetchMyAgences = async () => {
       try {
         setLoading(true);
-        const res = await api.get<{ success: boolean; data: Agence[]; message?: string }>('/agences/my-agence');
+        const params = {
+          typeAgence: typeAgence || undefined,
+          typeVehicule: typeVehicule || undefined,
+          etatVehicule: etatVehicule || undefined,
+        };
+        const res = await api.get<ApiResponse<Agence[]>>('/agences/my-agence', { params });
 
         if (res.data?.success) {
           setAgences(res.data.data ?? []);
         } else {
           setAgences([]);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Erreur lors de GET /agences/my-agence", err);
         setAgences([]);
       } finally {
@@ -72,7 +94,7 @@ export default function MesAgences() {
     };
 
     fetchMyAgences();
-  }, [user, token]);
+  }, [user, token, typeAgence, typeVehicule, etatVehicule]);
 
   const handleStatusChange = async (agenceId: string, status: 'approved' | 'rejected') => {
     try {
@@ -83,8 +105,9 @@ export default function MesAgences() {
         );
         toast.success(`Agence ${status === 'approved' ? 'approuvée' : 'rejetée'}`);
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Erreur lors du changement de statut');
+    } catch (err: unknown) {
+      const error = err as ErrorResponse;
+      toast.error(error.response?.data?.message || 'Erreur lors du changement de statut');
     }
   };
 
@@ -107,8 +130,9 @@ export default function MesAgences() {
                   setAgences((prev) => prev.filter((a) => a._id !== agenceId));
                   toast.success('Agence supprimée avec succès');
                 }
-              } catch (err: any) {
-                toast.error(err.response?.data?.message || 'Erreur lors de la suppression');
+              } catch (err: unknown) {
+                const error = err as ErrorResponse;
+                toast.error(error.response?.data?.message || 'Erreur lors de la suppression');
               } finally {
                 toast.dismiss(t.id);
               }
@@ -156,7 +180,6 @@ export default function MesAgences() {
   }
 
   const isAdmin = user.role === 'admin';
-  // Autorise la création d'agence aux agents (visible sur la page)
   const canCreate = user.role === 'agent';
 
   return (
@@ -168,6 +191,34 @@ export default function MesAgences() {
             <FaPlus /> Ajouter une agence
           </button>
         )}
+      </div>
+
+      <div className="filters-section">
+        <h2>Filtrer les agences</h2>
+        <div className="filter-group">
+          <label>Type d'agence:</label>
+          <select value={typeAgence} onChange={(e) => setTypeAgence(e.target.value)}>
+            <option value="">Tous</option>
+            <option value="vente">Vente</option>
+            <option value="location">Location</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Type de véhicule:</label>
+          <select value={typeVehicule} onChange={(e) => setTypeVehicule(e.target.value)}>
+            <option value="">Tous</option>
+            <option value="voiture">Voiture</option>
+            <option value="moto">Moto</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>État du véhicule:</label>
+          <select value={etatVehicule} onChange={(e) => setEtatVehicule(e.target.value)}>
+            <option value="">Tous</option>
+            <option value="neuf">Neuf</option>
+            <option value="occasion">Occasion</option>
+          </select>
+        </div>
       </div>
 
       {showForm && (
