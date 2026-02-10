@@ -1,4 +1,4 @@
-// src/components/Agence/Agences.tsx
+// src/components/Agence/Agences.tsx (Modified)
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -28,12 +28,22 @@ export default function Agences() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedAgence, setSelectedAgence] = useState<Agence | null>(null);
 
+  // States for filters
+  const [typeAgence, setTypeAgence] = useState('');
+  const [typeVehicule, setTypeVehicule] = useState('');
+  const [etatVehicule, setEtatVehicule] = useState('');
+
   useEffect(() => {
     const fetchAgences = async () => {
       try {
         setError(null);
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        const response = await axios.get('/api/agences/public', config);
+        const params = {
+          typeAgence: typeAgence || undefined,
+          typeVehicule: typeVehicule || undefined,
+          etatVehicule: etatVehicule || undefined,
+        };
+        const response = await axios.get('/api/agences/public', { ...config, params });
 
         if (response.data?.success === true) {
           setAgences(response.data.data || []);
@@ -52,7 +62,7 @@ export default function Agences() {
     };
 
     fetchAgences();
-  }, [token]);
+  }, [token, typeAgence, typeVehicule, etatVehicule]);
 
   const handleAgenceCreated = (newAgence: Agence) => {
     setAgences((prev) => [...prev, newAgence]);
@@ -74,6 +84,39 @@ export default function Agences() {
             <FaPlus /> Ajouter mon agence
           </button>
         )}
+      </div>
+
+      {/* Filters Section */}
+      <div className="filters-section">
+        <h2>Filtrer les agences</h2>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Type d'agence :</label>
+            <select value={typeAgence} onChange={(e) => setTypeAgence(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="vente">Vente</option>
+              <option value="location">Location</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Type de véhicule :</label>
+            <select value={typeVehicule} onChange={(e) => setTypeVehicule(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="voiture">Voiture</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>État du véhicule :</label>
+            <select value={etatVehicule} onChange={(e) => setEtatVehicule(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="neuf">Neuf</option>
+              <option value="occasion">Occasion</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {showCreateForm && isAgent && (

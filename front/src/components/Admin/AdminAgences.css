@@ -24,12 +24,18 @@ section h2 {
 }
 
 .agences-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .agence-card {
+  /* Ensure cards line up side-by-side and wrap when necessary */
+  flex: 0 1 340px; /* base width for each card */
+  min-width: 260px;
+  max-width: 420px;
   background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
@@ -38,6 +44,10 @@ section h2 {
   position: relative;
   overflow: hidden;
 }
+
+/* Keep good responsiveness on small screens */
+@media (max-width: 480px) {
+  .agence-card { flex-basis: 100%; max-width: 100%; }
 
 .agence-card:hover {
   transform: translateY(-4px);
