@@ -50,12 +50,14 @@ export default function Agences() {
         } else {
           setError('Format de réponse inattendu');
         }
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message ||
-          err.response ? `Erreur ${err.response.status}` : 
-          'Impossible de contacter le serveur'
-        );
+      } catch (err: unknown) {
+        let message = 'Impossible de contacter le serveur';
+        if (typeof err === 'object' && err !== null) {
+          const e = err as { response?: { data?: { message?: string }; status?: number } };
+          if (e.response?.data?.message) message = e.response.data.message;
+          else if (e.response?.status) message = `Erreur ${e.response.status}`;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }

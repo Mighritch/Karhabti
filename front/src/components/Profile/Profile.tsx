@@ -8,7 +8,17 @@ import { useNavigate } from 'react-router-dom';
 export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [agence, setAgence] = useState<any>(null);
+  interface AgenceInfo {
+    _id?: string;
+    nom: string;
+    ville: string;
+    adresse: string;
+    typeAgence?: 'vente' | 'location';
+    typeVehicule?: 'voiture' | 'moto';
+    status?: string;
+  }
+
+  const [agence, setAgence] = useState<AgenceInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

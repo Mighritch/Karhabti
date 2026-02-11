@@ -1,5 +1,5 @@
 // src/components/Auth/ResetPassword.tsx
-import { useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,13 +14,15 @@ const schema = yup.object({
     .required('Confirmation requise'),
 }).required();
 
+type FormInputs = yup.InferType<typeof schema>;
+
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const prefilledEmail = searchParams.get('email') || '';
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormInputs>({
     resolver: yupResolver(schema),
     defaultValues: { email: prefilledEmail },
   });
@@ -29,7 +31,7 @@ export default function ResetPassword() {
     if (prefilledEmail) setValue('email', prefilledEmail);
   }, [prefilledEmail, setValue]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     try {
       const res = await fetch('http://localhost:5000/api/users/direct-reset', {   // ← bonne URL
         method: 'POST',

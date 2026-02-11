@@ -19,7 +19,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleCreateSuccess = (newAgence: any) => {
+  const handleCreateSuccess = (newAgence?: unknown) => {
     setShowCreate(false);
     toast.success('Agence créée avec succès');
     navigate('/mes-agences');

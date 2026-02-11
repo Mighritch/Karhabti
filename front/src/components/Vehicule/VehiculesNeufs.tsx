@@ -46,8 +46,13 @@ export default function VehiculesNeufs() {
           const all = [...res.data.voitures, ...res.data.motos];
           setVehicules(all);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors du chargement des véhicules neufs');
+      } catch (err: unknown) {
+        let message = 'Erreur lors du chargement des véhicules neufs';
+        if (typeof err === 'object' && err !== null) {
+          const e = err as { response?: { data?: { message?: string } } };
+          if (e.response?.data?.message) message = e.response.data.message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }

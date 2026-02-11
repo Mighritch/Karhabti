@@ -33,8 +33,13 @@ export default function Login() {
       setServerError(null);
       await login(data.email, data.mdp);           // ← on passe mdp
       navigate('/dashboard');
-    } catch (err: any) {
-      setServerError(err.message || 'Identifiants incorrects');
+    } catch (err: unknown) {
+      let msg = 'Identifiants incorrects';
+      if (typeof err === 'object' && err !== null) {
+        const e = err as { message?: string };
+        if (e.message) msg = e.message;
+      }
+      setServerError(msg);
     }
   };
 
