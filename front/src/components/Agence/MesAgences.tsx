@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { 
-  FaBuilding, FaPlus, FaSpinner, FaList, FaEdit, 
-  FaTrash, FaCheck, FaTimes, FaCar, FaMotorcycle, FaEye, FaMapMarkerAlt 
+import {
+  FaBuilding, FaPlus, FaSpinner, FaList, FaEdit,
+  FaTrash, FaCheck, FaTimes, FaCar, FaMotorcycle, FaEye, FaMapMarkerAlt
 } from 'react-icons/fa';
 import AgenceForm from './AgenceForm';
 import VehiculeForm from '../Vehicule/VehiculeForm';
@@ -60,9 +60,12 @@ export default function MesAgences() {
   const [showVehiculeList, setShowVehiculeList] = useState(false);
   const [selectedAgence, setSelectedAgence] = useState<Agence | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Filtres
   const [typeAgence, setTypeAgence] = useState('');
   const [typeVehicule, setTypeVehicule] = useState('');
   const [etatVehicule, setEtatVehicule] = useState('');
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
     if (!user || (user.role !== 'agent' && user.role !== 'admin') || !token) {
@@ -77,7 +80,9 @@ export default function MesAgences() {
           typeAgence: typeAgence || undefined,
           typeVehicule: typeVehicule || undefined,
           etatVehicule: etatVehicule || undefined,
+          status: status || undefined,
         };
+
         const res = await api.get<ApiResponse<Agence[]>>('/agences/my-agence', { params });
 
         if (res.data?.success) {
@@ -94,7 +99,7 @@ export default function MesAgences() {
     };
 
     fetchMyAgences();
-  }, [user, token, typeAgence, typeVehicule, etatVehicule]);
+  }, [user, token, typeAgence, typeVehicule, etatVehicule, status]);
 
   const handleStatusChange = async (agenceId: string, status: 'approved' | 'rejected') => {
     try {
@@ -123,20 +128,23 @@ export default function MesAgences() {
           <span>Confirmer la suppression de "{agenceNom}" ?</span>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
             <button className="btn-cancel" onClick={() => toast.dismiss(t.id)}>Annuler</button>
-            <button className="btn-delete" onClick={async () => {
-              try {
-                const res = await api.delete(`/agences/${agenceId}`);
-                if (res.data.success) {
-                  setAgences((prev) => prev.filter((a) => a._id !== agenceId));
-                  toast.success('Agence supprimée avec succès');
+            <button
+              className="btn-delete"
+              onClick={async () => {
+                try {
+                  const res = await api.delete(`/agences/${agenceId}`);
+                  if (res.data.success) {
+                    setAgences((prev) => prev.filter((a) => a._id !== agenceId));
+                    toast.success('Agence supprimée avec succès');
+                  }
+                } catch (err: unknown) {
+                  const error = err as ErrorResponse;
+                  toast.error(error.response?.data?.message || 'Erreur lors de la suppression');
+                } finally {
+                  toast.dismiss(t.id);
                 }
-              } catch (err: unknown) {
-                const error = err as ErrorResponse;
-                toast.error(error.response?.data?.message || 'Erreur lors de la suppression');
-              } finally {
-                toast.dismiss(t.id);
-              }
-            }}>
+              }}
+            >
               Supprimer
             </button>
           </div>
@@ -195,29 +203,43 @@ export default function MesAgences() {
 
       <div className="filters-section">
         <h2>Filtrer les agences</h2>
-        <div className="filter-group">
-          <label>Type d'agence:</label>
-          <select value={typeAgence} onChange={(e) => setTypeAgence(e.target.value)}>
-            <option value="">Tous</option>
-            <option value="vente">Vente</option>
-            <option value="location">Location</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Type de véhicule:</label>
-          <select value={typeVehicule} onChange={(e) => setTypeVehicule(e.target.value)}>
-            <option value="">Tous</option>
-            <option value="voiture">Voiture</option>
-            <option value="moto">Moto</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>État du véhicule:</label>
-          <select value={etatVehicule} onChange={(e) => setEtatVehicule(e.target.value)}>
-            <option value="">Tous</option>
-            <option value="neuf">Neuf</option>
-            <option value="occasion">Occasion</option>
-          </select>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Type d'agence :</label>
+            <select value={typeAgence} onChange={(e) => setTypeAgence(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="vente">Vente</option>
+              <option value="location">Location</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Type de véhicule :</label>
+            <select value={typeVehicule} onChange={(e) => setTypeVehicule(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="voiture">Voiture</option>
+              <option value="moto">Moto</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>État du véhicule :</label>
+            <select value={etatVehicule} onChange={(e) => setEtatVehicule(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="neuf">Neuf</option>
+              <option value="occasion">Occasion</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Statut :</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="pending">En attente</option>
+              <option value="approved">Approuvée</option>
+              <option value="rejected">Rejetée</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -236,7 +258,9 @@ export default function MesAgences() {
 
       {agences.length === 0 ? (
         <p className="no-agence">
-          {isAdmin ? 'Aucune agence enregistrée sur la plateforme.' : 'Vous n’avez pas encore d’agence. Ajoutez-en une !'}
+          {isAdmin
+            ? 'Aucune agence enregistrée sur la plateforme.'
+            : 'Vous n’avez pas encore d’agence. Ajoutez-en une !'}
         </p>
       ) : (
         <div className="agences-list">
@@ -246,20 +270,32 @@ export default function MesAgences() {
                 <FaBuilding className="icon" />
                 <h3>{agence.nom}</h3>
                 <span className={`status-badge ${agence.status}`}>
-                  {agence.status === 'approved' ? 'Approuvée' : agence.status === 'pending' ? 'En attente' : 'Rejetée'}
+                  {agence.status === 'approved'
+                    ? 'Approuvée'
+                    : agence.status === 'pending'
+                    ? 'En attente'
+                    : 'Rejetée'}
                 </span>
               </div>
 
               <div className="card-info">
-                <p>{agence.ville} • {agence.adresse}</p>
-                <p>{agence.telephone} • {agence.email}</p>
+                <p>
+                  {agence.ville} • {agence.adresse}
+                </p>
+                <p>
+                  {agence.telephone} • {agence.email}
+                </p>
               </div>
 
               {isAdmin && (
                 <div className="stats-section">
                   <h4>Statistiques Véhicules</h4>
-                  <p><FaCar /> Voitures: {agence.totalVoitures ?? 0}</p>
-                  <p><FaMotorcycle /> Motos: {agence.totalMotos ?? 0}</p>
+                  <p>
+                    <FaCar /> Voitures: {agence.totalVoitures ?? 0}
+                  </p>
+                  <p>
+                    <FaMotorcycle /> Motos: {agence.totalMotos ?? 0}
+                  </p>
                   <p>Total: {agence.totalVehicules ?? 0}</p>
                 </div>
               )}
@@ -295,14 +331,19 @@ export default function MesAgences() {
                     <button className="btn-edit" onClick={() => handleEdit(agence)}>
                       <FaEdit /> Modifier
                     </button>
-                    <button className="btn-delete" onClick={() => handleDelete(agence._id, agence.nom)}>
+                    <button
+                      className="btn-delete"
+                      onClick={() => handleDelete(agence._id, agence.nom)}
+                    >
                       <FaTrash /> Supprimer
                     </button>
                   </>
                 )}
                 <a
                   className="btn-map"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${agence.adresse}, ${agence.ville}`)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${agence.adresse}, ${agence.ville}`
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -372,44 +413,59 @@ export default function MesAgences() {
             <h2>Détails de l'agence : {selectedAgence.nom}</h2>
             <div className="profile-details">
               <div className="detail-item">
-                <span className="label">Nom:</span>
+                <span className="label">Nom :</span>
                 <span className="value">{selectedAgence.nom}</span>
               </div>
               <div className="detail-item">
-                <span className="label">Ville:</span>
+                <span className="label">Ville :</span>
                 <span className="value">{selectedAgence.ville}</span>
               </div>
               <div className="detail-item">
-                <span className="label">Adresse:</span>
+                <span className="label">Adresse :</span>
                 <span className="value">{selectedAgence.adresse}</span>
               </div>
               <div className="detail-item">
-                <span className="label">Téléphone:</span>
+                <span className="label">Téléphone :</span>
                 <span className="value">{selectedAgence.telephone}</span>
               </div>
               <div className="detail-item">
-                <span className="label">Email:</span>
+                <span className="label">Email :</span>
                 <span className="value">{selectedAgence.email}</span>
               </div>
               <div className="detail-item">
-                <span className="label">Type d'agence:</span>
-                <span className="value">{selectedAgence.typeAgence.map(t => t === 'vente' ? 'Vente' : 'Location').join(' & ')}</span>
+                <span className="label">Type d'agence :</span>
+                <span className="value">
+                  {selectedAgence.typeAgence
+                    .map((t) => (t === 'vente' ? 'Vente' : 'Location'))
+                    .join(' & ')}
+                </span>
               </div>
               <div className="detail-item">
-                <span className="label">Type de véhicules:</span>
-                <span className="value">{selectedAgence.typeVehicule.map(v => v === 'voiture' ? '🚗 Voitures' : '🏍️ Motos').join(' & ')}</span>
+                <span className="label">Type de véhicules :</span>
+                <span className="value">
+                  {selectedAgence.typeVehicule
+                    .map((v) => (v === 'voiture' ? '🚗 Voitures' : '🏍️ Motos'))
+                    .join(' & ')}
+                </span>
               </div>
               {selectedAgence.typeAgence.includes('vente') && selectedAgence.etatVehicule && (
                 <div className="detail-item">
-                  <span className="label">État des véhicules:</span>
-                  <span className="value">{selectedAgence.etatVehicule.map(e => e === 'neuf' ? 'Neuf' : 'Occasion').join(' & ')}</span>
+                  <span className="label">État des véhicules :</span>
+                  <span className="value">
+                    {selectedAgence.etatVehicule
+                      .map((e) => (e === 'neuf' ? 'Neuf' : 'Occasion'))
+                      .join(' & ')}
+                  </span>
                 </div>
               )}
               <div className="detail-item">
-                <span className="label">Statut:</span>
+                <span className="label">Statut :</span>
                 <span className={`value status-badge ${selectedAgence.status}`}>
-                  {selectedAgence.status === 'approved' ? 'Approuvée' :
-                    selectedAgence.status === 'pending' ? 'En attente' : 'Rejetée'}
+                  {selectedAgence.status === 'approved'
+                    ? 'Approuvée'
+                    : selectedAgence.status === 'pending'
+                    ? 'En attente'
+                    : 'Rejetée'}
                 </span>
               </div>
 
@@ -417,15 +473,19 @@ export default function MesAgences() {
                 <div className="stats-section">
                   <h3>Statistiques Véhicules</h3>
                   <div className="detail-item">
-                    <span className="label"><FaCar /> Voitures:</span>
+                    <span className="label">
+                      <FaCar /> Voitures :
+                    </span>
                     <span className="value">{selectedAgence.totalVoitures ?? 0}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="label"><FaMotorcycle /> Motos:</span>
+                    <span className="label">
+                      <FaMotorcycle /> Motos :
+                    </span>
                     <span className="value">{selectedAgence.totalMotos ?? 0}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="label">Total Véhicules:</span>
+                    <span className="label">Total Véhicules :</span>
                     <span className="value">{selectedAgence.totalVehicules ?? 0}</span>
                   </div>
                 </div>
@@ -435,23 +495,27 @@ export default function MesAgences() {
                 <div className="agent-info-section">
                   <h3>Agent Responsable</h3>
                   <div className="detail-item">
-                    <span className="label">Nom complet:</span>
-                    <span className="value">{selectedAgence.agent.prenom} {selectedAgence.agent.nom}</span>
+                    <span className="label">Nom complet :</span>
+                    <span className="value">
+                      {selectedAgence.agent.prenom} {selectedAgence.agent.nom}
+                    </span>
                   </div>
                   <div className="detail-item">
-                    <span className="label">Email de l'agent:</span>
+                    <span className="label">Email de l'agent :</span>
                     <span className="value">{selectedAgence.agent.email}</span>
                   </div>
                 </div>
               )}
             </div>
+
             <div className="modal-footer">
-              <button className="btn-submit" onClick={() => setShowProfileModal(false)}>Retour</button>
+              <button className="btn-submit" onClick={() => setShowProfileModal(false)}>
+                Retour
+              </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

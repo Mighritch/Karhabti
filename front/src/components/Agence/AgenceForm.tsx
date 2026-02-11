@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { FaSpinner } from 'react-icons/fa';
 import './AgenceForm.css';
 import type { Agence } from './MesAgences';
+import type { SubmitHandler } from 'react-hook-form';
 
 interface AgenceFormProps {
   agence?: Agence | null;
@@ -10,10 +11,21 @@ interface AgenceFormProps {
   onCancel: () => void;
 }
 
+interface AgenceFormData {
+  nom: string;
+  ville: string;
+  adresse: string;
+  telephone: string;
+  email: string;
+  typeAgence: ('vente' | 'location')[];
+  typeVehicule: ('voiture' | 'moto')[];
+  etatVehicule: ('neuf' | 'occasion')[];
+}
+
 export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormProps) {
   const isEditMode = !!agence;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AgenceFormData>({
     nom: agence?.nom || '',
     ville: agence?.ville || '',
     adresse: agence?.adresse || '',
@@ -49,11 +61,12 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (name: string, value: string) => {
-    setFormData((prev: any) => {
-      const currentValues = prev[name] || [];
+  const handleCheckboxChange = (name: keyof AgenceFormData, value: string) => {
+    setFormData((prev) => {
+      const key = name as keyof AgenceFormData;
+      const currentValues = (prev[key] as unknown as string[]) || [];
       const newValues = currentValues.includes(value)
-        ? currentValues.filter((v: string) => v !== value)
+        ? currentValues.filter((v) => v !== value)
         : [...currentValues, value];
 
       // Ensure at least one is selected for required fields
@@ -61,16 +74,26 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
         return prev;
       }
 
-      return { ...prev, [name]: newValues };
+      return { ...prev, [key]: newValues } as AgenceFormData;
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit: SubmitHandler<AgenceFormData> = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (submitting) return;
     setSubmitting(true);
     setError(null);
+
+    const extractErrorMessage = (err: unknown) => {
+      if (typeof err === 'object' && err !== null) {
+        const e = err as { response?: { data?: { message?: string; errors?: { msg?: string }[] } }; message?: string };
+        if (e.response?.data?.message) return e.response.data.message;
+        if (Array.isArray(e.response?.data?.errors)) return e.response!.data!.errors!.map(x => x.msg || '').filter(Boolean).join(' • ');
+        if (typeof e.message === 'string') return e.message;
+      }
+      return 'Une erreur est survenue';
+    };
 
     try {
       let res;
@@ -97,19 +120,9 @@ export default function AgenceForm({ agence, onSuccess, onCancel }: AgenceFormPr
       } else {
         setError('Réponse invalide du serveur');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur opération agence:', err);
-      let message = 'Une erreur est survenue';
-
-      if (err.response?.data?.message) {
-        message = err.response.data.message;
-      } else if (err.response?.data?.errors) {
-        message = err.response.data.errors.map((e: any) => e.msg).join(' • ');
-      } else if (err.message) {
-        message = err.message;
-      }
-
-      setError(message);
+      setError(extractErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

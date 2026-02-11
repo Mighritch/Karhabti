@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await api.get('/users/me');
         setUser(res.data.user);
         setToken(storedToken);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Erreur lors du chargement de l'utilisateur :", err);
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];
@@ -80,12 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setToken(token);
       setUser(user);
-    } catch (err: any) {
-      throw new Error(
-        err.response?.data?.message ||
-        err.message ||
-        'Erreur de connexion – vérifiez email/mot de passe'
-      );
+    } catch (err: unknown) {
+      let msg = 'Erreur de connexion – vérifiez email/mot de passe';
+      if (typeof err === 'object' && err !== null) {
+        const e = err as { response?: { data?: { message?: string } }; message?: string };
+        msg = e.response?.data?.message || e.message || msg;
+      }
+      throw new Error(msg);
     }
   };
 
@@ -98,11 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setToken(token);
       setUser(user);
-    } catch (err: any) {
-      throw new Error(
-        err.response?.data?.message ||
-        'Erreur lors de l’inscription'
-      );
+    } catch (err: unknown) {
+      let msg = 'Erreur lors de l’inscription';
+      if (typeof err === 'object' && err !== null) {
+        const e = err as { response?: { data?: { message?: string } }; message?: string };
+        msg = e.response?.data?.message || msg;
+      }
+      throw new Error(msg);
     }
   };
 

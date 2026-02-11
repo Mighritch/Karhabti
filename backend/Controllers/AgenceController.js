@@ -66,7 +66,7 @@ const getMyAgence = async (req, res) => {
       })
     }
 
-    const { typeAgence, typeVehicule, etatVehicule } = req.query
+    const { typeAgence, typeVehicule, etatVehicule, status } = req.query
 
     const baseQuery = req.user.role === 'admin' ? {} : { agent: req.user._id }
     const filter = { ...baseQuery }
@@ -74,6 +74,7 @@ const getMyAgence = async (req, res) => {
     if (typeAgence) filter.typeAgence = typeAgence
     if (typeVehicule) filter.typeVehicule = typeVehicule
     if (etatVehicule) filter.etatVehicule = etatVehicule
+    if (status) filter.status = status
 
     let agences = await Agence.find(filter).populate('agent', 'nom prenom email')
 

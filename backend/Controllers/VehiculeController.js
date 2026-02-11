@@ -283,9 +283,21 @@ const suggestModels = async (req, res) => {
 const suggestFromImage = async (req, res) => {
   try {
     if (!req.files || !req.files.length) {
-      return res.status(400).json({ success: false });
+      return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
-    res.json({ success: true, suggestions: ['Modèle non identifié'] });
+
+    // Réponse de secours tant que l'intégration IA n'est pas en place
+    const fallback = {
+      marque: 'Inconnu',
+      modele: 'Inconnu',
+      annee: undefined,
+      couleur: undefined,
+      prixEstime: undefined,
+      confiance: 0,
+      description: 'Modèle non identifié'
+    };
+
+    res.json({ success: true, data: fallback });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

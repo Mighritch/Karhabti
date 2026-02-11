@@ -183,14 +183,20 @@ export default function VehiculeForm({
       });
 
       if (res.data.success) {
-        setAiSuggestions(res.data.data);
-        const confiance = res.data.data.confiance || 0;
-        // Auto-apply si la confiance est suffisante
-        if (confiance >= 0.6) {
-          applyAllSuggestions(res.data.data);
-        }
-        if (confiance < 0.60) {
-          setError(`Détection peu fiable (${Math.round(confiance * 100)}%) – vérifiez manuellement`);
+        // Supporter plusieurs formes de réponse : { data: {...} } ou legacy { suggestions: [...] }
+        const payload = res.data.data || (res.data.suggestions ? { description: Array.isArray(res.data.suggestions) ? res.data.suggestions.join(', ') : String(res.data.suggestions), confiance: 0 } : null);
+        if (!payload) {
+          setError('Réponse IA invalide');
+        } else {
+          setAiSuggestions(payload);
+          const confiance = typeof payload.confiance === 'number' ? payload.confiance : 0;
+          // Auto-apply si la confiance est suffisante
+          if (confiance >= 0.6) {
+            applyAllSuggestions(payload);
+          }
+          if (confiance < 0.60) {
+            setError(`Détection peu fiable (${Math.round(confiance * 100)}%) – vérifiez manuellement`);
+          }
         }
       } else {
         setError(res.data.message || "Réponse invalide du serveur");

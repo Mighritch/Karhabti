@@ -47,7 +47,7 @@ export default function Register() {
   const onSubmit: SubmitHandler<FormInputs> = async (formData) => {
     try {
       setServerError(null);
-      const { confirmPassword, ...data } = formData;
+      const { confirmPassword: _confirmPassword, ...data } = formData;
       await registerInContext(data as RegisterData);
       navigate('/dashboard');
     } catch (err: unknown) {
