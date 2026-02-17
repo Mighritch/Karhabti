@@ -1,24 +1,23 @@
 const express = require('express');
 const router = express.Router();
+
 const { 
   signup, 
   signin, 
   getMe,
   forgotPassword,
   resetPassword,
-  directReset
-} = require('../Controllers/UserController');
+  directReset 
+} = require('../controllers/UserController');   // ← attention au chemin et casse !
 
-const { protect } = require('../middleware/auth');           // middleware JWT
+const { protect } = require('../middleware/auth');
 
-// Routes publiques
 router.post('/signup', signup);
-router.post('/signin',  signin);
+router.post('/signin', signin);                 // ← doit être exactement /signin
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
 router.post('/direct-reset', directReset);
 
-// Routes protégées
 router.get('/me', protect, getMe);
 
 module.exports = router;

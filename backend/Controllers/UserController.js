@@ -48,7 +48,7 @@ exports.signup = async (req, res) => {
       dateNaissance,
       telephone,
       email: email.toLowerCase(),
-      mdp,
+      mdp,                  // doit être hashé via pre-save hook dans le modèle
       role: userRole
     });
 
@@ -79,27 +79,34 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res) => {
   try {
     const { email, mdp } = req.body;
-
     if (!email || !mdp) {
-      return res.status(400).json({ success: false, message: 'Email et mot de passe requis' });
+      return res.status(400).json({
+        success: false,
+        message: 'Email et mot de passe requis'
+      });
     }
 
+    // Important : on sélectionne explicitement le champ mdp
     const user = await User.findOne({ email: email.toLowerCase() }).select('+mdp');
-
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
+      return res.status(401).json({
+        success: false,
+        message: 'Identifiants incorrects'
+      });
     }
 
     const isMatch = await user.comparerMotDePasse(mdp);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
+      return res.status(401).json({
+        success: false,
+        message: 'Identifiants incorrects'
+      });
     }
 
     const token = generateToken(user);
 
     res.status(200).json({
       success: true,
-      message: 'Connexion réussie',
       token,
       user: {
         id: user._id,
@@ -110,8 +117,11 @@ exports.signin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Erreur signin:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    console.error('Erreur signin :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la connexion'
+    });
   }
 };
 
@@ -150,7 +160,7 @@ exports.forgotPassword = async (req, res) => {
 
     const resetToken = crypto.randomBytes(20).toString('hex');
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     await user.save({ validateBeforeSave: false });
 
@@ -181,7 +191,7 @@ exports.forgotPassword = async (req, res) => {
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
-      console.error('Erreur envoi email Brevo :', err);
+      console.error('Erreur envoi email :', err);
       return res.status(500).json({
         success: false,
         message: "Impossible d'envoyer l'email pour le moment. Réessayez plus tard."
@@ -213,7 +223,7 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    user.mdp = req.body.password;
+    user.mdp = req.body.password; // ← sera hashé automatiquement par pre-save
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -252,8 +262,7 @@ exports.directReset = async (req, res) => {
       });
     }
 
-    // Optionnel : tu peux ajouter une vérification (ex: IP, rate-limit, ancien mot de passe, etc.) en prod
-    user.mdp = password;          // ← le middleware pre('save') va hasher automatiquement
+    user.mdp = password; // ← hashé via middleware pre-save
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 

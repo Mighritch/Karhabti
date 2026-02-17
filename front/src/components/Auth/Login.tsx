@@ -31,15 +31,21 @@ export default function Login() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
       setServerError(null);
-      await login(data.email, data.mdp);           // ← on passe mdp
+      await login(data.email.trim(), data.mdp);
       navigate('/dashboard');
     } catch (err: unknown) {
-      let msg = 'Identifiants incorrects';
-      if (typeof err === 'object' && err !== null) {
-        const e = err as { message?: string };
-        if (e.message) msg = e.message;
+      let message = 'Échec de connexion';
+
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        message = String((err as { message?: unknown }).message ?? 'Erreur inconnue');
       }
-      setServerError(msg);
+
+      setServerError(message);
+      console.error('Erreur lors de la connexion :', err);
     }
   };
 
@@ -68,7 +74,7 @@ export default function Login() {
             <input
               id="mdp"
               type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"           // ← important pour les gestionnaires de mots de passe
+              autoComplete="current-password"
               placeholder="••••••••"
               {...register('mdp')}
             />

@@ -281,12 +281,73 @@ const suggestModels = async (req, res) => {
 };
 
 const suggestFromImage = async (req, res) => {
+  let imagePath = null;
   try {
     if (!req.files || !req.files.length) {
       return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
-
-    // Réponse de secours tant que l'intégration IA n'est pas en place
+    const imageFile = req.files[0];
+    imagePath = imageFile.path;
+    const fileData = fs.readFileSync(imagePath);
+    const base64Image = fileData.toString('base64');
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
+    });
+    const prompt = `Tu es un expert en identification de véhicules (voitures et motos) pour le marché tunisien.
+Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/après).
+{
+  "marque": string,
+  "modele": string,
+  "annee": number | null,
+  "couleur": string,
+  "prixEstime": number | null,
+  "confiance": number (0.0 à 1.0),
+  "description": string,
+  "etat": "neuf" | "occasion" | null,
+  "kilometrage": number | null,
+  "type": "voiture" | "moto" | null,
+  "categorie": string | null,
+  "puissance": number | null,
+  "cylindre": number | null
+}`;
+    const imagePart = {
+      inlineData: {
+        data: base64Image,
+        mimeType: imageFile.mimetype || 'image/jpeg',
+      },
+    };
+    const generatePromise = model.generateContent([prompt, imagePart]);
+    const result = await Promise.race([
+      generatePromise,
+      timeoutPromise(45000, 'Timeout analyse Gemini (45s)')
+    ]);
+    const responseText = result.response.text().trim();
+    let parsed = JSON.parse(responseText);
+    const data = {
+      marque: parsed.marque || 'Inconnu',
+      modele: parsed.modele || 'Inconnu',
+      annee: parsed.annee ? Number(parsed.annee) : undefined,
+      couleur: parsed.couleur || undefined,
+      prixEstime: parsed.prixEstime ? Number(parsed.prixEstime) : undefined,
+      confiance: typeof parsed.confiance === 'number' ? Math.max(0, Math.min(1, parsed.confiance)) : 0,
+      description: parsed.description || `Véhicule détecté : ${parsed.marque || ''} ${parsed.modele || ''}`,
+      etat: parsed.etat || undefined,
+      kilometrage: parsed.kilometrage ? Number(parsed.kilometrage) : undefined,
+      type: parsed.type || undefined,
+      categorie: parsed.categorie || undefined,
+      puissance: parsed.puissance ? Number(parsed.puissance) : undefined,
+      cylindre: parsed.cylindre ? Number(parsed.cylindre) : undefined,
+    };
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+      imagePath = null;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Erreur suggestFromImage :', err.message);
     const fallback = {
       marque: 'Inconnu',
       modele: 'Inconnu',
@@ -294,12 +355,12 @@ const suggestFromImage = async (req, res) => {
       couleur: undefined,
       prixEstime: undefined,
       confiance: 0,
-      description: 'Modèle non identifié'
+      description: 'Modèle non identifié (erreur IA)',
     };
-
+    if (imagePath && fs.existsSync(imagePath)) {
+      try { fs.unlinkSync(imagePath); } catch (e) {}
+    }
     res.json({ success: true, data: fallback });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
   }
 };
 
