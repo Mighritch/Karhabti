@@ -1,5 +1,11 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from 'react';
 import api from '../services/api';
 
 interface User {
@@ -23,6 +29,13 @@ export interface RegisterData {
   role: 'user' | 'agent' | 'admin';
 }
 
+interface AuthResponse {
+  success?: boolean;
+  token?: string;
+  user?: User;
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -41,20 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadUser = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const storedToken = localStorage.getItem('token');
-        if (!storedToken) {
-          setLoading(false);
-          return;
-        }
-
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-
-        const res = await api.get('/users/me');
+        const res = await api.get<{ user: User }>('/users/me');
         setUser(res.data.user);
         setToken(storedToken);
-      } catch (err: unknown) {
-        console.error("Erreur lors du chargement de l'utilisateur :", err);
+      } catch (err) {
+        console.error('Erreur chargement utilisateur :', err);
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
@@ -69,9 +81,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await api.post('/users/signin', {
-        email,
-        mdp: password, // mapping correct
+      const res = await api.post<AuthResponse>('/users/signin', {
+        email: email.trim().toLowerCase(),
+        mdp: password,
+      });
+
+      const { success, token, user, message } = res.data;
+
+      if (!success || !token || !user) {
+        throw new Error(message || 'Réponse invalide du serveur');
+      }
+
+      localStorage.setItem('token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setToken(token);
+      setUser(user);
+    } catch (error: unknown) {
+      let msg = 'Identifiants incorrects ou serveur indisponible';
+
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as {
+          response?: { status?: number; data?: { message?: string } };
+        };
+        const { status, data } = axiosError.response || {};
+
+        if (status === 401) {
+          msg = data?.message || 'Email ou mot de passe incorrect';
+        } else if (status === 400) {
+          msg = data?.message || 'Données invalides';
+        } else if (status && status >= 500) {
+          msg = 'Erreur serveur – réessayez plus tard';
+        } else {
+          msg = data?.message || error.message;
+        }
+      }
+
+      throw new Error(msg);
+    }
+  };
+
+  const register = async (data: RegisterData) => {
+    try {
+      const res = await api.post<{ token: string; user: User }>('/users/signup', {
+        ...data,
+        email: data.email.trim().toLowerCase(),
       });
 
       const { token, user } = res.data;
@@ -80,31 +133,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setToken(token);
       setUser(user);
-    } catch (err: unknown) {
-      let msg = 'Erreur de connexion – vérifiez email/mot de passe';
-      if (typeof err === 'object' && err !== null) {
-        const e = err as { response?: { data?: { message?: string } }; message?: string };
-        msg = e.response?.data?.message || e.message || msg;
-      }
-      throw new Error(msg);
-    }
-  };
-
-  const register = async (data: RegisterData) => {
-    try {
-      const res = await api.post('/users/signup', data);
-      const { token, user } = res.data;
-
-      localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setToken(token);
-      setUser(user);
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       let msg = 'Erreur lors de l’inscription';
-      if (typeof err === 'object' && err !== null) {
-        const e = err as { response?: { data?: { message?: string } }; message?: string };
-        msg = e.response?.data?.message || msg;
+
+      if (
+        error instanceof Error &&
+        'response' in error &&
+        (error as any).response?.data?.message
+      ) {
+        msg = (error as any).response.data.message;
       }
+
       throw new Error(msg);
     }
   };
@@ -116,23 +155,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        login,
-        register,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    user,
+    token,
+    loading,
+    login,
+    register,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');

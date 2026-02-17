@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5000/api',   // ← confirme que ton backend tourne sur 5000
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,           // ← évite les attentes infinies
+  timeout: 15000,
 });
 
 api.interceptors.request.use(
@@ -14,24 +14,24 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // If sending FormData (multipart), remove Content-Type so browser sets the boundary automatically
     if (config.data instanceof FormData) {
-      if (config.headers && 'Content-Type' in config.headers) {
-        delete config.headers['Content-Type'];
-      }
+      delete config.headers['Content-Type'];
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Intercepteur de réponse utile pour debug
 api.interceptors.response.use(
-  response => response,
-  error => {
-    console.error('Erreur API :', error.response?.data || error.message);
+  (response) => response,
+  (error) => {
+    console.warn('API Error →', {
+      status: error.response?.status,
+      url: error.config?.url,
+      method: error.config?.method,
+      dataSent: error.config?.data?.password ? { ...error.config.data, password: '***' } : error.config?.data,
+      message: error.response?.data?.message || error.message,
+    });
     return Promise.reject(error);
   }
 );
