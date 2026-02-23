@@ -1,3 +1,4 @@
+// src/controllers/VehiculeController.js
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
 const fs = require('fs');
@@ -10,6 +11,7 @@ const USE_AI_PROVIDER = (process.env.USE_AI_PROVIDER || 'gemini').toLowerCase();
 const timeoutPromise = (ms, msg = 'Timeout') =>
   new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
 
+// ==================== CRUD Voiture ====================
 const createVoiture = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -20,9 +22,7 @@ const createVoiture = async (req, res) => {
     const data = { ...req.body };
 
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
-      if (data[k] !== undefined) {
-        data[k] = data[k] === 'true' || data[k] === true || !!data[k];
-      }
+      if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
 
     ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix'].forEach(k => {
@@ -61,9 +61,7 @@ const updateVoiture = async (req, res) => {
     const data = { ...req.body };
 
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
-      if (data[k] !== undefined) {
-        data[k] = data[k] === 'true' || data[k] === true || !!data[k];
-      }
+      if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
 
     ['annee', 'puissance', 'cylindre', 'nbrVitesse', 'consommation', 'nbrPortes', 'nbrPlaces', 'airbags', 'kilometrage', 'prix'].forEach(k => {
@@ -81,13 +79,13 @@ const updateVoiture = async (req, res) => {
     voiture.updatedAt = Date.now();
 
     await voiture.save();
-
     res.json({ success: true, data: voiture });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
+// ==================== CRUD Moto ====================
 const createMoto = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -96,7 +94,6 @@ const createMoto = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
-
     ['annee', 'cylindre', 'kilometrage', 'prix'].forEach(k => {
       if (data[k] !== undefined && data[k] !== '') {
         const num = Number(data[k]);
@@ -108,7 +105,6 @@ const createMoto = async (req, res) => {
     data.images = images;
 
     const moto = await Moto.create(data);
-
     res.status(201).json({ success: true, data: moto });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -123,7 +119,6 @@ const updateMoto = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
-
     ['annee', 'cylindre', 'kilometrage', 'prix'].forEach(k => {
       if (data[k] !== undefined && data[k] !== '') {
         const num = Number(data[k]);
@@ -139,13 +134,13 @@ const updateMoto = async (req, res) => {
     moto.updatedAt = Date.now();
 
     await moto.save();
-
     res.json({ success: true, data: moto });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
+// ==================== Affichage ====================
 const getMyVoitures = async (req, res) => {
   try {
     const voitures = await Voiture.find({ agence: req.agence._id });
@@ -164,6 +159,7 @@ const getMyMotos = async (req, res) => {
   }
 };
 
+// ==================== Suppression ====================
 const deleteVoiture = async (req, res) => {
   try {
     const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
@@ -198,24 +194,21 @@ const deleteMoto = async (req, res) => {
   }
 };
 
+// ==================== Statistiques ====================
 const getGlobalStats = async (req, res) => {
   try {
     const totalVoitures = await Voiture.countDocuments();
     const totalMotos = await Moto.countDocuments();
-
     res.json({
       success: true,
-      data: {
-        totalVoitures,
-        totalMotos,
-        totalVehicules: totalVoitures + totalMotos
-      }
+      data: { totalVoitures, totalMotos, totalVehicules: totalVoitures + totalMotos }
     });
   } catch {
     res.status(500).json({ success: false });
   }
 };
 
+// ==================== Recherche ====================
 const searchVehicles = async (req, res) => {
   try {
     const { query } = req.query;
@@ -244,19 +237,26 @@ const searchVehicles = async (req, res) => {
   }
 };
 
+// ==================== Véhicules à vendre ====================
 const getAllNeufsAVendre = async (req, res) => {
   try {
-    const voitures = await Voiture.find({ etat: 'neuf' }).populate({
-      path: 'agence',
-      select: 'nom status typeAgence',
-      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
-    });
+    const typeVehicule = (req.query.typeVehicule || '').toString().trim();
 
-    const motos = await Moto.find({ etat: 'neuf' }).populate({
+    const agencePopulate = {
       path: 'agence',
       select: 'nom status typeAgence',
       match: { status: 'approved', typeAgence: { $in: ['vente'] } }
-    });
+    };
+
+    const fetchVoitures = !typeVehicule || typeVehicule === 'voiture';
+    const fetchMotos = !typeVehicule || typeVehicule === 'moto';
+
+    const voitures = fetchVoitures
+      ? await Voiture.find({ etat: 'neuf' }).populate(agencePopulate)
+      : [];
+    const motos = fetchMotos
+      ? await Moto.find({ etat: 'neuf' }).populate(agencePopulate)
+      : [];
 
     res.json({
       success: true,
@@ -270,17 +270,23 @@ const getAllNeufsAVendre = async (req, res) => {
 
 const getAllOccasionsAVendre = async (req, res) => {
   try {
-    const voitures = await Voiture.find({ etat: 'occasion' }).populate({
-      path: 'agence',
-      select: 'nom status typeAgence',
-      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
-    });
+    const typeVehicule = (req.query.typeVehicule || '').toString().trim();
 
-    const motos = await Moto.find({ etat: 'occasion' }).populate({
+    const agencePopulate = {
       path: 'agence',
       select: 'nom status typeAgence',
       match: { status: 'approved', typeAgence: { $in: ['vente'] } }
-    });
+    };
+
+    const fetchVoitures = !typeVehicule || typeVehicule === 'voiture';
+    const fetchMotos = !typeVehicule || typeVehicule === 'moto';
+
+    const voitures = fetchVoitures
+      ? await Voiture.find({ etat: 'occasion' }).populate(agencePopulate)
+      : [];
+    const motos = fetchMotos
+      ? await Moto.find({ etat: 'occasion' }).populate(agencePopulate)
+      : [];
 
     res.json({
       success: true,
@@ -292,6 +298,7 @@ const getAllOccasionsAVendre = async (req, res) => {
   }
 };
 
+// ==================== Suggestions ====================
 const suggestModels = async (req, res) => {
   try {
     const { marque } = req.body || {};
@@ -339,14 +346,9 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
   "cylindre": number | null
 }`;
 
-    const imagePart = {
-      inlineData: {
-        data: base64Image,
-        mimeType: imageFile.mimetype || 'image/jpeg'
-      }
-    };
-
+    const imagePart = { inlineData: { data: base64Image, mimeType: imageFile.mimetype || 'image/jpeg' } };
     const generatePromise = model.generateContent([prompt, imagePart]);
+
     const result = await Promise.race([
       generatePromise,
       timeoutPromise(45000, 'Timeout analyse Gemini (45s)')
@@ -371,31 +373,27 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
       cylindre: parsed.cylindre ? Number(parsed.cylindre) : undefined
     };
 
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-      imagePath = null;
-    }
-
+    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     res.json({ success: true, data });
   } catch (err) {
-    const fallback = {
-      marque: 'Inconnu',
-      modele: 'Inconnu',
-      annee: undefined,
-      couleur: undefined,
-      prixEstime: undefined,
-      confiance: 0,
-      description: 'Modèle non identifié (erreur IA)'
-    };
+    if (imagePath && fs.existsSync(imagePath)) { try { fs.unlinkSync(imagePath); } catch {} }
 
-    if (imagePath && fs.existsSync(imagePath)) {
-      try { fs.unlinkSync(imagePath); } catch {}
-    }
-
-    res.json({ success: true, data: fallback });
+    res.json({
+      success: true,
+      data: {
+        marque: 'Inconnu',
+        modele: 'Inconnu',
+        annee: undefined,
+        couleur: undefined,
+        prixEstime: undefined,
+        confiance: 0,
+        description: 'Modèle non identifié (erreur IA)'
+      }
+    });
   }
 };
 
+// ==================== Export ====================
 module.exports = {
   createVoiture,
   updateVoiture,

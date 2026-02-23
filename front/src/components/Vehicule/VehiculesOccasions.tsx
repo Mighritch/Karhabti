@@ -28,6 +28,7 @@ export default function VehiculesOccasions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeVehiculeFilter, setTypeVehiculeFilter] = useState('');
 
   const getImageUrl = (url: string) => {
     if (!url) return '';
@@ -39,7 +40,10 @@ export default function VehiculesOccasions() {
     const fetchOccasionsAVendre = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/vehicules/occasions-a-vendre');
+        setError(null);
+        const params: any = {};
+        if (typeVehiculeFilter) params.typeVehicule = typeVehiculeFilter;
+        const res = await api.get('/vehicules/occasions-a-vendre', { params });
         if (res.data.success) {
           const all = [...(res.data.voitures || []), ...(res.data.motos || [])];
           setVehicules(all);
@@ -50,9 +54,8 @@ export default function VehiculesOccasions() {
         setLoading(false);
       }
     };
-
     fetchOccasionsAVendre();
-  }, []);
+  }, [typeVehiculeFilter]);
 
   const filteredVehicules = vehicules.filter(v => {
     const term = searchTerm.toLowerCase();
@@ -72,6 +75,22 @@ export default function VehiculesOccasions() {
           Véhicules Occasions à Vendre
           <span className="badge occasion">OCCASION</span>
         </h2>
+      </div>
+
+      <div className="filters-section" style={{ marginBottom: '1.5rem' }}>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Type de véhicule :</label>
+            <select
+              value={typeVehiculeFilter}
+              onChange={(e) => setTypeVehiculeFilter(e.target.value)}
+            >
+              <option value="">Tous</option>
+              <option value="voiture">Voitures</option>
+              <option value="moto">Motos</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="search-bar-container">
@@ -111,24 +130,19 @@ export default function VehiculesOccasions() {
                 )}
                 <div className="occasion-badge">OCCASION</div>
               </div>
-
               <div className="vehicule-info">
                 <h3>{v.marque} {v.modele}</h3>
-
                 <p className="v-meta">
                   <span>Année : <strong>{v.annee}</strong></span>
                   <span>Immat : <strong>{v.immatriculation || '—'}</strong></span>
                 </p>
-
                 <p className="v-meta">
                   <span>KM : <strong>{v.kilometrage ? v.kilometrage.toLocaleString('fr-TN') : '0'}</strong></span>
                   <span>Type : <strong>{v.categorie || v.typeMoto || '—'}</strong></span>
                 </p>
-
                 <p className="v-meta price-line">
                   <span>Prix : <strong>{v.prix ? v.prix.toLocaleString('fr-TN') + ' TND' : 'Sur demande'}</strong></span>
                 </p>
-
                 <p className="v-meta" style={{ fontSize: '0.95rem', marginTop: '8px', color: '#a5b4fc' }}>
                   Agence : <strong>{v.agence?.nom || '—'}</strong>
                 </p>

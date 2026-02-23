@@ -30,6 +30,7 @@ export default function VehiculesNeufs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeVehiculeFilter, setTypeVehiculeFilter] = useState(''); // '' | 'voiture' | 'moto'
 
   const getImageUrl = (url: string) => {
     if (!url) return '';
@@ -41,7 +42,13 @@ export default function VehiculesNeufs() {
     const fetchNeufsAVendre = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/vehicules/neufs-a-vendre');
+        setError(null);
+
+        const params: any = {};
+        if (typeVehiculeFilter) params.typeVehicule = typeVehiculeFilter;
+
+        const res = await api.get('/vehicules/neufs-a-vendre', { params });
+
         if (res.data.success) {
           const all = [...(res.data.voitures || []), ...(res.data.motos || [])];
           setVehicules(all);
@@ -54,7 +61,7 @@ export default function VehiculesNeufs() {
     };
 
     fetchNeufsAVendre();
-  }, []);
+  }, [typeVehiculeFilter]);
 
   const filteredVehicules = vehicules.filter(v => {
     const term = searchTerm.toLowerCase();
@@ -76,7 +83,25 @@ export default function VehiculesNeufs() {
         </h2>
       </div>
 
-      <div className="search-bar-container">
+      {/* ==================== FILTRE TYPE VÉHICULE ==================== */}
+      <div className="filters-section" style={{ marginBottom: '1.5rem' }}>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Type de véhicule :</label>
+            <select
+              value={typeVehiculeFilter}
+              onChange={(e) => setTypeVehiculeFilter(e.target.value)}
+            >
+              <option value="">Tous</option>
+              <option value="voiture">Voitures</option>
+              <option value="moto">Motos</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ==================== BARRE DE RECHERCHE ==================== */}
+      <div className="search-bar-container" style={{ marginBottom: '1rem' }}>
         <input
           type="text"
           placeholder="Filtrer par marque, modèle, type..."
