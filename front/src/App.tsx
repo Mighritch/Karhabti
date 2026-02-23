@@ -1,4 +1,3 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -13,11 +12,12 @@ import ForgotPassword from './components/Auth/ForgotPassword';
 import ResetPassword from './components/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import SearchResults from './components/SearchResults';
+import VehiculesNeufs from './components/Vehicule/VehiculesNeufs';
+import VehiculesOccasions from './components/Vehicule/VehiculesOccasions';
 import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-
 import './App.css';
 
 function App() {
@@ -33,26 +33,23 @@ function App() {
 
           <main className="main-content">
             <Routes>
-              {/* Pages d'authentification centrées */}
               <Route path="/login" element={<CenteredAuth><Login /></CenteredAuth>} />
               <Route path="/register" element={<CenteredAuth><Register /></CenteredAuth>} />
               <Route path="/forgot-password" element={<CenteredAuth><ForgotPassword /></CenteredAuth>} />
               <Route path="/reset-password/:token" element={<CenteredAuth><ResetPassword /></CenteredAuth>} />
 
-              {/* Routes protégées */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin/agences" element={<AdminAgences />} />
               </Route>
 
-              {/* Routes publiques */}
               <Route path="/" element={<HomeHero />} />
               <Route path="/agences" element={<Agences />} />
+              <Route path="/vehicules-neufs" element={<VehiculesNeufs />} />
+              <Route path="/vehicules-occasions" element={<VehiculesOccasions />} />
               <Route path="/mes-agences" element={<MesAgences />} />
               <Route path="/search" element={<SearchResults />} />
-
-              {/* 404 */}
               <Route path="*" element={<div className="not-found">404 — Page non trouvée</div>} />
             </Routes>
           </main>
@@ -77,7 +74,6 @@ function CenteredAuth({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Hero Section d'accueil
 function HomeHero() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
@@ -96,7 +92,7 @@ function HomeHero() {
         <h1 className="hero-title">
           Louez et achetez la voiture de vos rêves <span className="highlight">en quelques clics</span>
         </h1>
-        
+
         <p className="hero-subtitle">
           Des centaines de véhicules partout en Tunisie — particuliers & agences<br />
           Réservation simple, prix transparents, assurance incluse.

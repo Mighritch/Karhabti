@@ -1,9 +1,9 @@
-// src/components/VehiculesNeufs.tsx
+// src/components/VehiculesOccasions.tsx
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { FaCar, FaMotorcycle, FaSpinner, FaSearch } from 'react-icons/fa';
+import { FaCar, FaSpinner, FaSearch } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import './VehiculeList.css'; // réutilisation des styles
+import './VehiculeList.css';
 
 interface Vehicule {
   _id: string;
@@ -20,12 +20,10 @@ interface Vehicule {
   motorisation: string;
   prix?: number;
   createdAt: string;
-  agence: {
-    nom: string;
-  };
+  agence: { nom: string };
 }
 
-export default function VehiculesNeufs() {
+export default function VehiculesOccasions() {
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,22 +36,22 @@ export default function VehiculesNeufs() {
   };
 
   useEffect(() => {
-    const fetchNeufsAVendre = async () => {
+    const fetchOccasionsAVendre = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/vehicules/neufs-a-vendre');
+        const res = await api.get('/vehicules/occasions-a-vendre');
         if (res.data.success) {
           const all = [...(res.data.voitures || []), ...(res.data.motos || [])];
           setVehicules(all);
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors du chargement des véhicules neufs');
+        setError(err.response?.data?.message || 'Erreur lors du chargement des véhicules d\'occasion');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNeufsAVendre();
+    fetchOccasionsAVendre();
   }, []);
 
   const filteredVehicules = vehicules.filter(v => {
@@ -70,9 +68,9 @@ export default function VehiculesNeufs() {
     <div className="vehicule-list-container" style={{ margin: '2rem auto', maxWidth: '1300px' }}>
       <div className="list-header">
         <h2>
-          <FaCar style={{ marginRight: '12px', color: '#4ade80' }} />
-          Véhicules Neufs à Vendre
-          <span className="badge-neuf">NEUF</span>
+          <FaCar style={{ marginRight: '12px', color: '#fbbf24' }} />
+          Véhicules Occasions à Vendre
+          <span className="badge occasion">OCCASION</span>
         </h2>
       </div>
 
@@ -88,7 +86,7 @@ export default function VehiculesNeufs() {
 
       {loading ? (
         <div className="loading">
-          <FaSpinner className="spin" /> Chargement des véhicules neufs...
+          <FaSpinner className="spin" /> Chargement des véhicules d'occasion...
         </div>
       ) : error ? (
         <div className="error-message" style={{ textAlign: 'center', color: '#ff6b6b', padding: '2rem' }}>
@@ -96,7 +94,7 @@ export default function VehiculesNeufs() {
         </div>
       ) : filteredVehicules.length === 0 ? (
         <div className="empty-state">
-          <p>Aucun véhicule neuf correspondant à votre recherche pour le moment.</p>
+          <p>Aucun véhicule d'occasion correspondant à votre recherche pour le moment.</p>
           <Link to="/search" className="btn-create-first" style={{ marginTop: '1.5rem' }}>
             <FaSearch /> Recherche avancée
           </Link>
@@ -111,7 +109,7 @@ export default function VehiculesNeufs() {
                 ) : (
                   <div className="no-image">Pas d'image</div>
                 )}
-                <div className="neuf-badge">NEUF</div>
+                <div className="occasion-badge">OCCASION</div>
               </div>
 
               <div className="vehicule-info">

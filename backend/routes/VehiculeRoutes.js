@@ -16,8 +16,9 @@ const {
   suggestModels,
   suggestFromImage,
   getGlobalStats,
-  searchVehicles, // New import
-  getAllNeufsAVendre
+  searchVehicles,
+  getAllNeufsAVendre,
+  getAllOccasionsAVendre
 } = require('../Controllers/VehiculeController');
 
 const upload = require('../middleware/upload');
@@ -25,13 +26,13 @@ const upload = require('../middleware/upload');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Public routes (avant protect)
 router.get('/search', searchVehicles);
 router.get('/neufs-a-vendre', getAllNeufsAVendre);
+router.get('/occasions-a-vendre', getAllOccasionsAVendre);
+
 router.use(protect);
 
 router.post('/suggest-models', requireApprovedAgency, suggestModels);
-
 router.post('/suggest-from-image', upload.array('images', 1), requireApprovedAgency, suggestFromImage);
 
 router.post('/voitures', upload.array('images', 5), requireApprovedAgency, createVoiture);

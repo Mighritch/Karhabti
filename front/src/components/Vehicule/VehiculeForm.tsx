@@ -49,7 +49,7 @@ interface VehiculeFormData {
   typePermis?: string;
   prix?: number;
   images?: { url: string; nomFichier: string }[];
-  [key: string]: string | number | boolean | undefined | { url: string; nomFichier: string }[];
+  [key: string]: any;
 }
 
 interface AiSuggestions {
@@ -66,6 +66,7 @@ interface AiSuggestions {
   categorie?: string;
   description?: string;
   confiance?: number;
+  [key: string]: any;
 }
 
 interface VehiculeFormProps {
@@ -112,6 +113,19 @@ export default function VehiculeForm({
   const [error, setError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestions | null>(null);
+
+  const motorisationOptions = typeVehicule === 'voiture'
+    ? ['Essence', 'Diesel', 'Électrique', 'Hybride', 'Hybride rechargeable', 'GPL']
+    : ['Essence', 'Diesel', 'Électrique', 'Hybride'];
+
+  const boiteOptions = typeVehicule === 'voiture'
+    ? ['Manuelle', 'Automatique', 'CVT', 'Semi-automatique']
+    : ['Manuelle', 'Automatique', 'CVT'];
+
+  const typeMotoOptions = [
+    'Routière', 'Sportive', 'Naked', 'Trail/Adventure', 'Scooter',
+    'Maxi-scooter', 'Cruiser', 'Touring', 'Enduro'
+  ];
 
   useEffect(() => {
     if (isEditMode && initialData) {
@@ -176,21 +190,17 @@ export default function VehiculeForm({
       }
 
       const res = await api.post('/vehicules/suggest-from-image', formDataImage, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         timeout: 95000,
       });
 
       if (res.data.success) {
-        // Supporter plusieurs formes de réponse : { data: {...} } ou legacy { suggestions: [...] }
         const payload = res.data.data || (res.data.suggestions ? { description: Array.isArray(res.data.suggestions) ? res.data.suggestions.join(', ') : String(res.data.suggestions), confiance: 0 } : null);
         if (!payload) {
           setError('Réponse IA invalide');
         } else {
           setAiSuggestions(payload);
           const confiance = typeof payload.confiance === 'number' ? payload.confiance : 0;
-          // Auto-apply si la confiance est suffisante
           if (confiance >= 0.6) {
             applyAllSuggestions(payload);
           }
@@ -201,8 +211,8 @@ export default function VehiculeForm({
       } else {
         setError(res.data.message || "Réponse invalide du serveur");
       }
-    } catch (err: unknown) {
-      setError((err as Error).message || "Erreur réseau / timeout");
+    } catch (err: any) {
+      setError(err.message || "Erreur réseau / timeout");
     } finally {
       setAnalyzing(false);
     }
@@ -246,9 +256,7 @@ export default function VehiculeForm({
     });
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val =
       type === 'checkbox'
@@ -293,9 +301,7 @@ export default function VehiculeForm({
       }
 
       const res = await method(endpoint, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.data.success) {
@@ -303,8 +309,8 @@ export default function VehiculeForm({
       } else {
         setError(res.data.message || 'Erreur inattendue');
       }
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erreur lors de l’enregistrement');
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l’enregistrement');
     } finally {
       setSubmitting(false);
     }
@@ -496,16 +502,11 @@ export default function VehiculeForm({
                   <option value="Utilitaire / Van">Utilitaire / Van</option>
                 </>
               ) : (
-                <>
-                  <option value="Routière">Routière</option>
-                  <option value="Sportive">Sportive</option>
-                  <option value="Naked">Naked</option>
-                  <option value="Trail/Adventure">Trail/Adventure</option>
-                  <option value="Scooter">Scooter</option>
-                  <option value="Maxi-scooter">Maxi-scooter</option>
-                  <option value="Cruiser">Cruiser</option>
-                  <option value="Touring">Touring</option>
-                </>
+                typeMotoOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))
               )}
             </select>
           </div>
@@ -517,7 +518,7 @@ export default function VehiculeForm({
             <div className="form-group">
               <label>Motorisation *</label>
               <select name="motorisation" value={formData.motorisation ?? ''} onChange={handleChange} required>
-                {['Essence', 'Diesel', 'Électrique', 'Hybride', 'GPL'].map((m) => (
+                {motorisationOptions.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
@@ -527,7 +528,7 @@ export default function VehiculeForm({
             <div className="form-group">
               <label>Boîte de vitesses *</label>
               <select name="boiteVitesse" value={formData.boiteVitesse ?? ''} onChange={handleChange} required>
-                {['Manuelle', 'Automatique', 'CVT', 'Semi-automatique'].map((b) => (
+                {boiteOptions.map((b) => (
                   <option key={b} value={b}>
                     {b}
                   </option>

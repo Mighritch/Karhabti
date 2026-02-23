@@ -174,7 +174,7 @@ const deleteVoiture = async (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
 
-    await voiture.remove();
+    await voiture.deleteOne();
     res.json({ success: true });
   } catch {
     res.status(500).json({ success: false });
@@ -191,7 +191,7 @@ const deleteMoto = async (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
 
-    await moto.remove();
+    await moto.deleteOne();
     res.json({ success: true });
   } catch {
     res.status(500).json({ success: false });
@@ -236,8 +236,8 @@ const searchVehicles = async (req, res) => {
 
     res.json({
       success: true,
-      voitures: voitures.filter(v => v.agence?.statut === 'approuvee'),
-      motos: motos.filter(m => m.agence?.statut === 'approuvee')
+      voitures: voitures.filter(v => v.agence?.status === 'approved'),
+      motos: motos.filter(m => m.agence?.status === 'approved')
     });
   } catch {
     res.status(500).json({ success: false });
@@ -248,14 +248,14 @@ const getAllNeufsAVendre = async (req, res) => {
   try {
     const voitures = await Voiture.find({ etat: 'neuf' }).populate({
       path: 'agence',
-      select: 'nom statut typeAgence',
-      match: { statut: 'approuvee', typeAgence: 'vente' }
+      select: 'nom status typeAgence',
+      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
     });
 
     const motos = await Moto.find({ etat: 'neuf' }).populate({
       path: 'agence',
-      select: 'nom statut typeAgence',
-      match: { statut: 'approuvee', typeAgence: 'vente' }
+      select: 'nom status typeAgence',
+      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
     });
 
     res.json({
@@ -263,8 +263,32 @@ const getAllNeufsAVendre = async (req, res) => {
       voitures: voitures.filter(v => v.agence),
       motos: motos.filter(m => m.agence)
     });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const getAllOccasionsAVendre = async (req, res) => {
+  try {
+    const voitures = await Voiture.find({ etat: 'occasion' }).populate({
+      path: 'agence',
+      select: 'nom status typeAgence',
+      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
+    });
+
+    const motos = await Moto.find({ etat: 'occasion' }).populate({
+      path: 'agence',
+      select: 'nom status typeAgence',
+      match: { status: 'approved', typeAgence: { $in: ['vente'] } }
+    });
+
+    res.json({
+      success: true,
+      voitures: voitures.filter(v => v.agence),
+      motos: motos.filter(m => m.agence)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -286,16 +310,17 @@ const suggestFromImage = async (req, res) => {
     if (!req.files || !req.files.length) {
       return res.status(400).json({ success: false, message: 'Aucune image fournie' });
     }
+
     const imageFile = req.files[0];
     imagePath = imageFile.path;
     const fileData = fs.readFileSync(imagePath);
     const base64Image = fileData.toString('base64');
+
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-      },
+      generationConfig: { responseMimeType: 'application/json' }
     });
+
     const prompt = `Tu es un expert en identification de véhicules (voitures et motos) pour le marché tunisien.
 Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/après).
 {
@@ -304,7 +329,7 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
   "annee": number | null,
   "couleur": string,
   "prixEstime": number | null,
-  "confiance": number (0.0 à 1.0),
+  "confiance": number,
   "description": string,
   "etat": "neuf" | "occasion" | null,
   "kilometrage": number | null,
@@ -313,19 +338,23 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
   "puissance": number | null,
   "cylindre": number | null
 }`;
+
     const imagePart = {
       inlineData: {
         data: base64Image,
-        mimeType: imageFile.mimetype || 'image/jpeg',
-      },
+        mimeType: imageFile.mimetype || 'image/jpeg'
+      }
     };
+
     const generatePromise = model.generateContent([prompt, imagePart]);
     const result = await Promise.race([
       generatePromise,
       timeoutPromise(45000, 'Timeout analyse Gemini (45s)')
     ]);
+
     const responseText = result.response.text().trim();
     let parsed = JSON.parse(responseText);
+
     const data = {
       marque: parsed.marque || 'Inconnu',
       modele: parsed.modele || 'Inconnu',
@@ -339,15 +368,16 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
       type: parsed.type || undefined,
       categorie: parsed.categorie || undefined,
       puissance: parsed.puissance ? Number(parsed.puissance) : undefined,
-      cylindre: parsed.cylindre ? Number(parsed.cylindre) : undefined,
+      cylindre: parsed.cylindre ? Number(parsed.cylindre) : undefined
     };
+
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
       imagePath = null;
     }
+
     res.json({ success: true, data });
   } catch (err) {
-    console.error('Erreur suggestFromImage :', err.message);
     const fallback = {
       marque: 'Inconnu',
       modele: 'Inconnu',
@@ -355,11 +385,13 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
       couleur: undefined,
       prixEstime: undefined,
       confiance: 0,
-      description: 'Modèle non identifié (erreur IA)',
+      description: 'Modèle non identifié (erreur IA)'
     };
+
     if (imagePath && fs.existsSync(imagePath)) {
-      try { fs.unlinkSync(imagePath); } catch (e) {}
+      try { fs.unlinkSync(imagePath); } catch {}
     }
+
     res.json({ success: true, data: fallback });
   }
 };
@@ -376,6 +408,7 @@ module.exports = {
   getGlobalStats,
   searchVehicles,
   getAllNeufsAVendre,
+  getAllOccasionsAVendre,
   suggestModels,
   suggestFromImage
 };

@@ -76,6 +76,7 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  transition: all 0.4s ease;
 }
 
 .main-nav-links {
@@ -132,6 +133,19 @@
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 8px 20px rgba(100, 108, 255, 0.25);
   border-color: rgba(100, 108, 255, 0.4);
+}
+
+.nav-link.active {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(100, 108, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(100, 108, 255, 0.6);
+  }
 }
 
 .login-link {
@@ -273,19 +287,6 @@
   box-shadow: 0 0 20px rgba(100, 80, 255, 0.4);
 }
 
-.nav-link.active {
-  animation: pulse-glow 2s infinite;
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(100, 108, 255, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(100, 108, 255, 0.6);
-  }
-}
-
 .menu-toggle {
   display: none;
   background: none;
@@ -300,8 +301,12 @@
   filter: drop-shadow(0 0 6px rgba(100, 108, 255, 0.6));
 }
 
-.header-nav {
-  transition: all 0.4s ease;
+.nav-link:has(.nav-icon svg.fa-car) {
+}
+
+.nav-icon svg.fa-car {
+  font-size: 1.3rem;
+  margin-right: 0.6rem;
 }
 
 @media (max-width: 900px) {
@@ -343,10 +348,14 @@
     padding-bottom: 1rem;
   }
 
-  .main-nav-links .nav-link {
+  .main-nav-links .nav-link,
+  .nav-link,
+  .logout-btn,
+  .profile-link {
     width: 100%;
     text-align: center;
     justify-content: center;
+    padding: 1rem 1.5rem;
   }
 
   .user-section,
@@ -367,13 +376,16 @@
     border-radius: 12px;
   }
 
-  .nav-link,
-  .logout-btn,
-  .profile-link {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
+  .nav-link:has(.nav-icon svg.fa-car) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     padding: 1rem 1.5rem;
+  }
+
+  .nav-icon svg.fa-car {
+    margin-right: 1rem;
+    font-size: 1.5rem;
   }
 
   .header-container {
@@ -385,7 +397,7 @@
   .header-container {
     padding: 1rem 2rem;
   }
-  
+
   .logo h1 {
     font-size: 1.9rem;
   }
@@ -395,7 +407,7 @@
   .header-container {
     padding: 1rem;
   }
-  
+
   .logo h1 {
     font-size: 1.8rem;
   }
@@ -405,18 +417,18 @@
   .header-container {
     padding: 0.8rem;
   }
-  
+
   .logo h1 {
     font-size: 1.6rem;
   }
-  
+
   .nav-link,
   .logout-btn,
   .profile-link {
     padding: 0.65rem 1rem;
     font-size: 0.9rem;
   }
-  
+
   .user-section {
     padding: 1rem;
   }

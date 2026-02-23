@@ -2,7 +2,7 @@
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiLogOut, FiUser, FiSettings, FiStar, FiMenu, FiX } from 'react-icons/fi';
-import { FaBuilding } from 'react-icons/fa';
+import { FaBuilding, FaCar } from 'react-icons/fa';
 import { useState } from 'react';
 import './Header.css';
 
@@ -10,7 +10,6 @@ export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -19,23 +18,19 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
 
   const isActive = (path: string) =>
     location.pathname.startsWith(path) ? 'active' : '';
 
   const isAgentOrAdmin = user && (user.role === 'agent' || user.role === 'admin');
-  const showPublicLinks = !user || (user && !isAgentOrAdmin);
+  const showPublicLinks = !user || !isAgentOrAdmin;
 
   return (
     <header className="main-header">
       <div className="header-container">
+        {/* LOGO */}
         <Link to="/" className="logo" onClick={closeMenu}>
           <FaBuilding
             style={{
@@ -49,16 +44,18 @@ export default function Header() {
           <span className="premium-badge">Premium</span>
         </Link>
 
+        {/* MENU BUTTON (Mobile) */}
         <button
           className="menu-toggle"
           onClick={toggleMenu}
-          aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         >
           {isMenuOpen ? <FiX size={28} /> : <FiMenu size={28} />}
         </button>
 
+        {/* NAVIGATION */}
         <nav className={`header-nav ${isMenuOpen ? 'open' : ''}`}>
-          {/* Liens grand public → on ne garde que "Agences" */}
+          {/* Liens publics */}
           {showPublicLinks && (
             <div className="main-nav-links">
               <Link
@@ -69,10 +66,28 @@ export default function Header() {
                 <FaBuilding className="nav-icon" />
                 <span>Agences</span>
               </Link>
+
+              <Link
+                to="/vehicules-neufs"
+                className={`nav-link ${isActive('/vehicules-neufs')}`}
+                onClick={closeMenu}
+              >
+                <FaCar className="nav-icon" />
+                <span>Véhicules Neufs</span>
+              </Link>
+
+              <Link
+                to="/vehicules-occasions"
+                className={`nav-link ${isActive('/vehicules-occasions')}`}
+                onClick={closeMenu}
+              >
+                <FaCar className="nav-icon" />
+                <span>Véhicules Occasions</span>
+              </Link>
             </div>
           )}
 
-          {/* Espace utilisateur / authentification */}
+          {/* Utilisateur connecté */}
           {user && Object.keys(user).length > 0 ? (
             <div className="user-section">
               <div className="user-name" onClick={closeMenu}>
@@ -124,10 +139,13 @@ export default function Header() {
               </button>
             </div>
           ) : (
+            /* Non connecté */
             <div className="auth-links" onClick={closeMenu}>
               <Link
                 to="/login"
-                className={`nav-link login-link ${location.pathname === '/login' ? 'active' : ''}`}
+                className={`nav-link login-link ${
+                  location.pathname === '/login' ? 'active' : ''
+                }`}
               >
                 <FiUser className="nav-icon" />
                 Connexion
@@ -135,7 +153,9 @@ export default function Header() {
 
               <Link
                 to="/register"
-                className={`nav-link register-link ${location.pathname === '/register' ? 'active' : ''}`}
+                className={`nav-link register-link ${
+                  location.pathname === '/register' ? 'active' : ''
+                }`}
               >
                 <FiStar className="nav-icon" />
                 S'inscrire
