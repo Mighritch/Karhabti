@@ -14,9 +14,8 @@ import Dashboard from './pages/Dashboard';
 import SearchResults from './components/SearchResults';
 import VehiculesNeufs from './components/Vehicule/VehiculesNeufs';
 import VehiculesOccasions from './components/Vehicule/VehiculesOccasions';
+import Panier from './pages/Panier';
 import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -48,6 +47,7 @@ function App() {
               <Route path="/agences" element={<Agences />} />
               <Route path="/vehicules-neufs" element={<VehiculesNeufs />} />
               <Route path="/vehicules-occasions" element={<VehiculesOccasions />} />
+              <Route path="/panier" element={<Panier />} />
               <Route path="/mes-agences" element={<MesAgences />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="*" element={<div className="not-found">404 — Page non trouvée</div>} />
@@ -75,16 +75,7 @@ function CenteredAuth({ children }: { children: React.ReactNode }) {
 }
 
 function HomeHero() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
   const { user } = useAuth();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/search?query=${encodeURIComponent(searchTerm)}`);
-    }
-  };
 
   return (
     <div className="hero-section">
@@ -97,20 +88,6 @@ function HomeHero() {
           Des centaines de véhicules partout en Tunisie — particuliers & agences<br />
           Réservation simple, prix transparents, assurance incluse.
         </p>
-
-        <form onSubmit={handleSearch} className="search-bar-container" style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
-          <input
-            type="text"
-            placeholder="Rechercher par marque, modèle, type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-            style={{ marginBottom: '1rem' }}
-          />
-          <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-            Rechercher
-          </button>
-        </form>
 
         {(!user || user.role !== 'user') && (
           <div className="hero-cta">

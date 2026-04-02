@@ -1,6 +1,6 @@
-// src/controllers/VehiculeController.js
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
+const Panier = require('../models/Panier');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -11,7 +11,7 @@ const USE_AI_PROVIDER = (process.env.USE_AI_PROVIDER || 'gemini').toLowerCase();
 const timeoutPromise = (ms, msg = 'Timeout') =>
   new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
 
-// ==================== CRUD Voiture ====================
+// =========================== VOITURES ===========================
 const createVoiture = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -20,7 +20,6 @@ const createVoiture = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
-
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
       if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
@@ -59,7 +58,6 @@ const updateVoiture = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
-
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
       if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
@@ -85,7 +83,7 @@ const updateVoiture = async (req, res) => {
   }
 };
 
-// ==================== CRUD Moto ====================
+// =========================== MOTOS ===========================
 const createMoto = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -140,7 +138,7 @@ const updateMoto = async (req, res) => {
   }
 };
 
-// ==================== Affichage ====================
+// =========================== AFFICHAGE ===========================
 const getMyVoitures = async (req, res) => {
   try {
     const voitures = await Voiture.find({ agence: req.agence._id });
@@ -159,7 +157,7 @@ const getMyMotos = async (req, res) => {
   }
 };
 
-// ==================== Suppression ====================
+// =========================== SUPPRESSION ===========================
 const deleteVoiture = async (req, res) => {
   try {
     const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
@@ -194,7 +192,7 @@ const deleteMoto = async (req, res) => {
   }
 };
 
-// ==================== Statistiques ====================
+// =========================== STATISTIQUES ===========================
 const getGlobalStats = async (req, res) => {
   try {
     const totalVoitures = await Voiture.countDocuments();
@@ -208,7 +206,7 @@ const getGlobalStats = async (req, res) => {
   }
 };
 
-// ==================== Recherche ====================
+// =========================== RECHERCHES ===========================
 const searchVehicles = async (req, res) => {
   try {
     const { query } = req.query;
@@ -237,7 +235,7 @@ const searchVehicles = async (req, res) => {
   }
 };
 
-// ==================== Véhicules à vendre ====================
+// =========================== NEUFS / OCCASIONS ===========================
 const getAllNeufsAVendre = async (req, res) => {
   try {
     const typeVehicule = (req.query.typeVehicule || '').toString().trim();
@@ -298,7 +296,7 @@ const getAllOccasionsAVendre = async (req, res) => {
   }
 };
 
-// ==================== Suggestions ====================
+// =========================== SUGGESTIONS ===========================
 const suggestModels = async (req, res) => {
   try {
     const { marque } = req.body || {};
@@ -311,6 +309,7 @@ const suggestModels = async (req, res) => {
   }
 };
 
+// =========================== IA IMAGE ===========================
 const suggestFromImage = async (req, res) => {
   let imagePath = null;
   try {
@@ -393,7 +392,96 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
   }
 };
 
-// ==================== Export ====================
+// =========================== PANIER ===========================
+const addToCart = async (req, res) => {
+  try {
+    const { vehiculeId, typeVehicule } = req.body;
+    const userId = req.user._id;
+
+    if (!vehiculeId || !typeVehicule) {
+      return res.status(400).json({ success: false, message: 'vehiculeId et typeVehicule requis' });
+    }
+
+    let vehicule;
+    const modelName = typeVehicule === 'voiture' ? 'Voiture' : 'Moto';
+    
+    if (typeVehicule === 'voiture') {
+      vehicule = await Voiture.findById(vehiculeId).populate('agence', 'nom status');
+    } else if (typeVehicule === 'moto') {
+      vehicule = await Moto.findById(vehiculeId).populate('agence', 'nom status');
+    } else {
+      return res.status(400).json({ success: false, message: 'Type de véhicule invalide' });
+    }
+
+    if (!vehicule) {
+      return res.status(404).json({ success: false, message: 'Véhicule non trouvé' });
+    }
+
+    if (vehicule.agence?.status !== 'approved') {
+      return res.status(403).json({ success: false, message: "L'agence n'est pas approuvée" });
+    }
+
+    let panier = await Panier.findOne({ user: userId });
+    if (!panier) panier = new Panier({ user: userId, items: [] });
+
+    const itemExists = panier.items.some(item => item.vehiculeId.toString() === vehiculeId);
+    if (itemExists) {
+      return res.status(400).json({ success: false, message: 'Ce véhicule est déjà dans votre panier' });
+    }
+
+    panier.items.push({
+      vehiculeId: vehicule._id,
+      typeVehicule: modelName,
+      marque: vehicule.marque,
+      modele: vehicule.modele,
+      annee: vehicule.annee,
+      prix: vehicule.prix,
+      imageUrl: vehicule.images?.[0]?.url || null,
+      agenceNom: vehicule.agence?.nom || 'Agence inconnue',
+      etat: vehicule.etat
+    });
+
+    await panier.save();
+
+    res.json({
+      success: true,
+      message: 'Véhicule ajouté au panier avec succès',
+      item: {
+        vehiculeId: vehicule._id,
+        marque: vehicule.marque,
+        modele: vehicule.modele,
+        prix: vehicule.prix,
+        type: typeVehicule
+      }
+    });
+  } catch (err) {
+    console.error('Erreur addToCart:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const getCart = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const panier = await Panier.findOne({ user: userId });
+
+    if (!panier) return res.json({ success: true, items: [], total: 0 });
+
+    const items = panier.items.map(i => ({
+      ...i._doc,
+      typeVehicule: i.typeVehicule === 'Voiture' ? 'voiture' : 'moto'
+    }));
+
+    const total = items.reduce((sum, i) => sum + (i.prix || 0), 0);
+
+    res.json({ success: true, items, total });
+  } catch (err) {
+    console.error('Erreur getCart:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// =========================== EXPORT ===========================
 module.exports = {
   createVoiture,
   updateVoiture,
@@ -408,5 +496,7 @@ module.exports = {
   getAllNeufsAVendre,
   getAllOccasionsAVendre,
   suggestModels,
-  suggestFromImage
+  suggestFromImage,
+  addToCart,
+  getCart
 };

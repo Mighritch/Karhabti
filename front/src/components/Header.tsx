@@ -1,7 +1,7 @@
 // src/components/Header.tsx
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FiLogOut, FiUser, FiSettings, FiStar, FiMenu, FiX } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiSettings, FiStar, FiMenu, FiX, FiShoppingCart } from 'react-icons/fi';
 import { FaBuilding, FaCar } from 'react-icons/fa';
 import { useState } from 'react';
 import './Header.css';
@@ -11,6 +11,9 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Simuler un nombre d'articles (À remplacer par la logique de votre contexte panier)
+  const cartCount = 0; 
 
   const handleLogout = () => {
     logout();
@@ -87,81 +90,97 @@ export default function Header() {
             </div>
           )}
 
-          {/* Utilisateur connecté */}
-          {user && Object.keys(user).length > 0 ? (
-            <div className="user-section">
-              <div className="user-name" onClick={closeMenu}>
-                <FiUser className="user-icon" />
-                <span className="name-text">
-                  {user.prenom || 'Utilisateur'} {user.nom || ''}
-                </span>
-                {user.isPremium && <FiStar className="premium-star" />}
+          {/* SECTION PANIER & AUTH */}
+          <div className="actions-section">
+            {/* PANIER (Accessible à tous ou seulement connectés selon votre choix) */}
+            <Link 
+              to="/panier" 
+              className={`cart-link ${isActive('/panier')}`} 
+              onClick={closeMenu}
+              title="Mon Panier"
+            >
+              <div className="cart-icon-wrapper">
+                <FiShoppingCart size={24} />
+                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
               </div>
+            </Link>
 
-              {user.role === 'agent' && (
+            {/* Utilisateur connecté */}
+            {user && Object.keys(user).length > 0 ? (
+              <div className="user-section">
+                <div className="user-name" onClick={closeMenu}>
+                  <FiUser className="user-icon" />
+                  <span className="name-text">
+                    {user.prenom || 'Utilisateur'} {user.nom || ''}
+                  </span>
+                  {user.isPremium && <FiStar className="premium-star" />}
+                </div>
+
+                {user.role === 'agent' && (
+                  <Link
+                    to="/mes-agences"
+                    className={`nav-link agence-link ${isActive('/mes-agences')}`}
+                    onClick={closeMenu}
+                  >
+                    <FaBuilding className="nav-icon" />
+                    <span>Mes Agences</span>
+                  </Link>
+                )}
+
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin/agences"
+                    className={`nav-link admin-agences-link ${isActive('/admin/agences')}`}
+                    onClick={closeMenu}
+                  >
+                    <FaBuilding className="nav-icon" />
+                    <span>Gestion Agences</span>
+                  </Link>
+                )}
+
                 <Link
-                  to="/mes-agences"
-                  className={`nav-link agence-link ${isActive('/mes-agences')}`}
+                  to="/profile"
+                  className={`nav-link profile-link ${isActive('/profile')}`}
                   onClick={closeMenu}
                 >
-                  <FaBuilding className="nav-icon" />
-                  <span>Mes Agences</span>
+                  <FiSettings className="nav-icon" />
+                  <span>Mon Profil</span>
                 </Link>
-              )}
 
-              {user.role === 'admin' && (
-                <Link
-                  to="/admin/agences"
-                  className={`nav-link admin-agences-link ${isActive('/admin/agences')}`}
-                  onClick={closeMenu}
+                <button
+                  onClick={handleLogout}
+                  className="logout-btn"
+                  aria-label="Se déconnecter"
                 >
-                  <FaBuilding className="nav-icon" />
-                  <span>Gestion Agences</span>
+                  <FiLogOut className="nav-icon" />
+                  <span>Déconnexion</span>
+                </button>
+              </div>
+            ) : (
+              /* Non connecté */
+              <div className="auth-links" onClick={closeMenu}>
+                <Link
+                  to="/login"
+                  className={`nav-link login-link ${
+                    location.pathname === '/login' ? 'active' : ''
+                  }`}
+                >
+                  <FiUser className="nav-icon" />
+                  Connexion
                 </Link>
-              )}
 
-              <Link
-                to="/profile"
-                className={`nav-link profile-link ${isActive('/profile')}`}
-                onClick={closeMenu}
-              >
-                <FiSettings className="nav-icon" />
-                <span>Mon Profil</span>
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="logout-btn"
-                aria-label="Se déconnecter"
-              >
-                <FiLogOut className="nav-icon" />
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          ) : (
-            /* Non connecté */
-            <div className="auth-links" onClick={closeMenu}>
-              <Link
-                to="/login"
-                className={`nav-link login-link ${
-                  location.pathname === '/login' ? 'active' : ''
-                }`}
-              >
-                <FiUser className="nav-icon" />
-                Connexion
-              </Link>
-
-              <Link
-                to="/register"
-                className={`nav-link register-link ${
-                  location.pathname === '/register' ? 'active' : ''
-                }`}
-              >
-                <FiStar className="nav-icon" />
-                S'inscrire
-              </Link>
-            </div>
-          )}
+                <Link
+                  to="/register"
+                  className={`nav-link register-link ${
+                    location.pathname === '/register' ? 'active' : ''
+                  }`}
+                >
+                  <FiStar className="nav-icon" />
+                  S'inscrire
+                </Link>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
     </header>

@@ -32,7 +32,7 @@ export default function Login() {
     try {
       setServerError(null);
       await login(data.email.trim(), data.mdp);
-      navigate('/dashboard');
+      navigate('/', { replace: true });
     } catch (err: unknown) {
       let message = 'Échec de connexion';
 

@@ -49,7 +49,7 @@ export default function Register() {
       setServerError(null);
       const { confirmPassword: _confirmPassword, ...data } = formData;
       await registerInContext(data as RegisterData);
-      navigate('/dashboard');
+      navigate('/', { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setServerError(error.response?.data?.message || "Erreur lors de l'inscription");

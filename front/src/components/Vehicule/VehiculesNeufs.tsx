@@ -1,9 +1,9 @@
 // src/components/VehiculesNeufs.tsx
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { FaCar, FaMotorcycle, FaSpinner, FaSearch } from 'react-icons/fa';
+import { FaCar, FaSpinner, FaSearch, FaShoppingCart } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import './VehiculeList.css'; // réutilisation des styles (y compris les nouveaux pour le modal)
+import './VehiculeList.css';
 
 interface Vehicule {
   _id: string;
@@ -13,8 +13,8 @@ interface Vehicule {
   immatriculation?: string;
   images: { url: string; nomFichier: string }[];
   kilometrage?: number;
-  categorie?: string;           // pour voiture
-  typeMoto?: string;            // pour moto
+  categorie?: string;
+  typeMoto?: string;
   couleur: string;
   etat: 'neuf' | 'occasion';
   motorisation: string;
@@ -51,10 +51,28 @@ export default function VehiculesNeufs() {
   const [typeVehiculeFilter, setTypeVehiculeFilter] = useState('');
   const [selectedVehicule, setSelectedVehicule] = useState<Vehicule | null>(null);
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string): string => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
     return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
+  const handleAddToCart = async (vehiculeId: string, typeVehicule: 'voiture' | 'moto') => {
+    try {
+      const res = await api.post('/vehicules/panier/add', {
+        vehiculeId,
+        typeVehicule,
+      });
+
+      if (res.data.success) {
+        const item = res.data.item || {};
+        alert(`✅ ${item.marque || ''} ${item.modele || ''} ajouté au panier !`);
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as any)?.response?.data?.message || "Erreur lors de l'ajout au panier";
+      alert(errorMessage);
+    }
   };
 
   useEffect(() => {
@@ -63,7 +81,7 @@ export default function VehiculesNeufs() {
         setLoading(true);
         setError(null);
 
-        const params: any = {};
+        const params: Record<string, string> = {};
         if (typeVehiculeFilter) params.typeVehicule = typeVehiculeFilter;
 
         const res = await api.get('/vehicules/neufs-a-vendre', { params });
@@ -72,8 +90,10 @@ export default function VehiculesNeufs() {
           const all = [...(res.data.voitures || []), ...(res.data.motos || [])];
           setVehicules(all);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors du chargement des véhicules neufs');
+      } catch (err: unknown) {
+        const errorMessage =
+          (err as any)?.response?.data?.message || 'Erreur lors du chargement des véhicules neufs';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -82,7 +102,7 @@ export default function VehiculesNeufs() {
     fetchNeufsAVendre();
   }, [typeVehiculeFilter]);
 
-  const filteredVehicules = vehicules.filter(v => {
+  const filteredVehicules = vehicules.filter((v) => {
     const term = searchTerm.toLowerCase();
     return (
       v.marque.toLowerCase().includes(term) ||
@@ -102,7 +122,6 @@ export default function VehiculesNeufs() {
         </h2>
       </div>
 
-      {/* FILTRE TYPE VÉHICULE */}
       <div className="filters-section" style={{ marginBottom: '1.5rem' }}>
         <div className="filter-row">
           <div className="filter-group">
@@ -119,13 +138,12 @@ export default function VehiculesNeufs() {
         </div>
       </div>
 
-      {/* BARRE DE RECHERCHE */}
       <div className="search-bar-container" style={{ marginBottom: '1rem' }}>
         <input
           type="text"
           placeholder="Filtrer par marque, modèle, type..."
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
       </div>
@@ -147,7 +165,7 @@ export default function VehiculesNeufs() {
         </div>
       ) : (
         <div className="vehicule-grid">
-          {filteredVehicules.map(v => (
+          {filteredVehicules.map((v) => (
             <div key={v._id} className="vehicule-card">
               <div className="vehicule-image">
                 {v.images?.length > 0 ? (
@@ -179,39 +197,48 @@ export default function VehiculesNeufs() {
                   Agence : <strong>{v.agence?.nom || '—'}</strong>
                 </p>
 
-                {/* BOUTON AJOUTÉ : Voir les caractéristiques */}
-                <button
-                  className="btn-view-details"
-                  onClick={() => setSelectedVehicule(v)}
-                >
-                  <FaSearch /> Voir toutes les caractéristiques
-                </button>
+                <div className="card-actions">
+                  <button
+                    className="btn-view-details"
+                    onClick={() => setSelectedVehicule(v)}
+                  >
+                    <FaSearch /> Détails
+                  </button>
+
+                  <button
+                    className="btn-add-to-cart"
+                    onClick={() => handleAddToCart(v._id, v.categorie ? 'voiture' : 'moto')}
+                  >
+                    <FaShoppingCart /> Ajouter au panier
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ==================== MODAL DÉTAILS ==================== */}
+      {/* Modal Détails */}
       {selectedVehicule && (
-        <div className="detail-modal" onClick={(e) => { if (e.target === e.currentTarget) setSelectedVehicule(null); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => setSelectedVehicule(null)}>×</button>
+        <div
+          className="detail-modal"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedVehicule(null);
+          }}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setSelectedVehicule(null)}>
+              ×
+            </button>
 
             <h2>
               {selectedVehicule.marque} {selectedVehicule.modele}
               <span style={{ fontSize: '0.75em', opacity: 0.7 }}> - {selectedVehicule.annee}</span>
             </h2>
 
-            {selectedVehicule.etat === 'neuf' ? (
-              <div className="neuf-badge" style={{ position: 'static', display: 'inline-block', margin: '0.5rem 0' }}>
-                NEUF
-              </div>
-            ) : (
-              <div className="occasion-badge" style={{ position: 'static', display: 'inline-block', margin: '0.5rem 0' }}>
-                OCCASION
-              </div>
-            )}
+            <div className="neuf-badge" style={{ position: 'static', display: 'inline-block', margin: '0.5rem 0' }}>
+              NEUF
+            </div>
 
             <div className="modal-image">
               {selectedVehicule.images?.[0] && (
@@ -256,7 +283,6 @@ export default function VehiculesNeufs() {
                 <div className="detail-item"><strong>Permis requis</strong><span>{selectedVehicule.typePermis}</span></div>
               )}
 
-              {/* Champs spécifiques VOITURE */}
               {selectedVehicule.categorie && (
                 <>
                   {selectedVehicule.puissance && <div className="detail-item"><strong>Puissance</strong><span>{selectedVehicule.puissance} ch</span></div>}
@@ -274,7 +300,6 @@ export default function VehiculesNeufs() {
                 </>
               )}
 
-              {/* Champ spécifique MOTO */}
               {!selectedVehicule.categorie && selectedVehicule.typeMoto && selectedVehicule.typeTransmission && (
                 <div className="detail-item"><strong>Transmission</strong><span>{selectedVehicule.typeTransmission}</span></div>
               )}
