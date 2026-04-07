@@ -1,17 +1,19 @@
 const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
 const Panier = require('../models/Panier');
+const Commande = require('../models/Commande');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const USE_AI_PROVIDER = (process.env.USE_AI_PROVIDER || 'gemini').toLowerCase();
 
 const timeoutPromise = (ms, msg = 'Timeout') =>
   new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
 
-// =========================== VOITURES ===========================
+// --- GESTION DES VOITURES ---
+
 const createVoiture = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -20,6 +22,7 @@ const createVoiture = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
+
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
       if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
@@ -58,6 +61,7 @@ const updateVoiture = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
+
     ['abs', 'regulateurVitesse', 'climatisation', 'cameraRecul', 'gps', 'ecranMultimedia'].forEach(k => {
       if (data[k] !== undefined) data[k] = data[k] === 'true' || data[k] === true || !!data[k];
     });
@@ -77,13 +81,41 @@ const updateVoiture = async (req, res) => {
     voiture.updatedAt = Date.now();
 
     await voiture.save();
+
     res.json({ success: true, data: voiture });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// =========================== MOTOS ===========================
+const deleteVoiture = async (req, res) => {
+  try {
+    const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
+    if (!voiture) return res.status(404).json({ success: false });
+
+    voiture.images.forEach(img => {
+      const filePath = path.join(__dirname, '..', 'public', img.url.replace('/uploads/vehicules/', 'uploads/vehicules/'));
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+
+    await voiture.deleteOne();
+    res.json({ success: true, message: 'Voiture supprimée' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const getMyVoitures = async (req, res) => {
+  try {
+    const voitures = await Voiture.find({ agence: req.agence._id });
+    res.json({ success: true, data: voitures });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// --- GESTION DES MOTOS ---
+
 const createMoto = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -92,6 +124,7 @@ const createMoto = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
+
     ['annee', 'cylindre', 'kilometrage', 'prix'].forEach(k => {
       if (data[k] !== undefined && data[k] !== '') {
         const num = Number(data[k]);
@@ -103,6 +136,7 @@ const createMoto = async (req, res) => {
     data.images = images;
 
     const moto = await Moto.create(data);
+
     res.status(201).json({ success: true, data: moto });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -117,6 +151,7 @@ const updateMoto = async (req, res) => {
     })) || [];
 
     const data = { ...req.body };
+
     ['annee', 'cylindre', 'kilometrage', 'prix'].forEach(k => {
       if (data[k] !== undefined && data[k] !== '') {
         const num = Number(data[k]);
@@ -132,46 +167,10 @@ const updateMoto = async (req, res) => {
     moto.updatedAt = Date.now();
 
     await moto.save();
+
     res.json({ success: true, data: moto });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-// =========================== AFFICHAGE ===========================
-const getMyVoitures = async (req, res) => {
-  try {
-    const voitures = await Voiture.find({ agence: req.agence._id });
-    res.json({ success: true, data: voitures });
-  } catch {
-    res.status(500).json({ success: false });
-  }
-};
-
-const getMyMotos = async (req, res) => {
-  try {
-    const motos = await Moto.find({ agence: req.agence._id });
-    res.json({ success: true, data: motos });
-  } catch {
-    res.status(500).json({ success: false });
-  }
-};
-
-// =========================== SUPPRESSION ===========================
-const deleteVoiture = async (req, res) => {
-  try {
-    const voiture = await Voiture.findOne({ _id: req.params.id, agence: req.agence._id });
-    if (!voiture) return res.status(404).json({ success: false });
-
-    voiture.images.forEach(img => {
-      const filePath = path.join(__dirname, '..', 'public', img.url.replace('/uploads/vehicules/', 'uploads/vehicules/'));
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
-
-    await voiture.deleteOne();
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ success: false });
   }
 };
 
@@ -186,13 +185,23 @@ const deleteMoto = async (req, res) => {
     });
 
     await moto.deleteOne();
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ success: false });
+    res.json({ success: true, message: 'Moto supprimée' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// =========================== STATISTIQUES ===========================
+const getMyMotos = async (req, res) => {
+  try {
+    const motos = await Moto.find({ agence: req.agence._id });
+    res.json({ success: true, data: motos });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// --- RECHERCHE ET STATS ---
+
 const getGlobalStats = async (req, res) => {
   try {
     const totalVoitures = await Voiture.countDocuments();
@@ -201,16 +210,15 @@ const getGlobalStats = async (req, res) => {
       success: true,
       data: { totalVoitures, totalMotos, totalVehicules: totalVoitures + totalMotos }
     });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// =========================== RECHERCHES ===========================
 const searchVehicles = async (req, res) => {
   try {
     const { query } = req.query;
-    if (!query?.trim()) return res.status(400).json({ success: false });
+    if (!query?.trim()) return res.status(400).json({ success: false, message: 'Query requise' });
 
     const searchQuery = {
       $or: [
@@ -230,16 +238,14 @@ const searchVehicles = async (req, res) => {
       voitures: voitures.filter(v => v.agence?.status === 'approved'),
       motos: motos.filter(m => m.agence?.status === 'approved')
     });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// =========================== NEUFS / OCCASIONS ===========================
 const getAllNeufsAVendre = async (req, res) => {
   try {
     const typeVehicule = (req.query.typeVehicule || '').toString().trim();
-
     const agencePopulate = {
       path: 'agence',
       select: 'nom status typeAgence',
@@ -249,12 +255,8 @@ const getAllNeufsAVendre = async (req, res) => {
     const fetchVoitures = !typeVehicule || typeVehicule === 'voiture';
     const fetchMotos = !typeVehicule || typeVehicule === 'moto';
 
-    const voitures = fetchVoitures
-      ? await Voiture.find({ etat: 'neuf' }).populate(agencePopulate)
-      : [];
-    const motos = fetchMotos
-      ? await Moto.find({ etat: 'neuf' }).populate(agencePopulate)
-      : [];
+    const voitures = fetchVoitures ? await Voiture.find({ etat: 'neuf' }).populate(agencePopulate) : [];
+    const motos = fetchMotos ? await Moto.find({ etat: 'neuf' }).populate(agencePopulate) : [];
 
     res.json({
       success: true,
@@ -269,7 +271,6 @@ const getAllNeufsAVendre = async (req, res) => {
 const getAllOccasionsAVendre = async (req, res) => {
   try {
     const typeVehicule = (req.query.typeVehicule || '').toString().trim();
-
     const agencePopulate = {
       path: 'agence',
       select: 'nom status typeAgence',
@@ -279,12 +280,8 @@ const getAllOccasionsAVendre = async (req, res) => {
     const fetchVoitures = !typeVehicule || typeVehicule === 'voiture';
     const fetchMotos = !typeVehicule || typeVehicule === 'moto';
 
-    const voitures = fetchVoitures
-      ? await Voiture.find({ etat: 'occasion' }).populate(agencePopulate)
-      : [];
-    const motos = fetchMotos
-      ? await Moto.find({ etat: 'occasion' }).populate(agencePopulate)
-      : [];
+    const voitures = fetchVoitures ? await Voiture.find({ etat: 'occasion' }).populate(agencePopulate) : [];
+    const motos = fetchMotos ? await Moto.find({ etat: 'occasion' }).populate(agencePopulate) : [];
 
     res.json({
       success: true,
@@ -296,7 +293,6 @@ const getAllOccasionsAVendre = async (req, res) => {
   }
 };
 
-// =========================== SUGGESTIONS ===========================
 const suggestModels = async (req, res) => {
   try {
     const { marque } = req.body || {};
@@ -309,7 +305,6 @@ const suggestModels = async (req, res) => {
   }
 };
 
-// =========================== IA IMAGE ===========================
 const suggestFromImage = async (req, res) => {
   let imagePath = null;
   try {
@@ -327,25 +322,15 @@ const suggestFromImage = async (req, res) => {
       generationConfig: { responseMimeType: 'application/json' }
     });
 
-    const prompt = `Tu es un expert en identification de véhicules (voitures et motos) pour le marché tunisien.
-Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/après).
-{
-  "marque": string,
-  "modele": string,
-  "annee": number | null,
-  "couleur": string,
-  "prixEstime": number | null,
-  "confiance": number,
-  "description": string,
-  "etat": "neuf" | "occasion" | null,
-  "kilometrage": number | null,
-  "type": "voiture" | "moto" | null,
-  "categorie": string | null,
-  "puissance": number | null,
-  "cylindre": number | null
-}`;
+    const prompt = `Tu es un expert en identification de véhicules...`;
 
-    const imagePart = { inlineData: { data: base64Image, mimeType: imageFile.mimetype || 'image/jpeg' } };
+    const imagePart = {
+      inlineData: {
+        data: base64Image,
+        mimeType: imageFile.mimetype || 'image/jpeg'
+      }
+    };
+
     const generatePromise = model.generateContent([prompt, imagePart]);
 
     const result = await Promise.race([
@@ -359,40 +344,21 @@ Analyse cette photo et retourne UNIQUEMENT un JSON valide (aucun texte avant/apr
     const data = {
       marque: parsed.marque || 'Inconnu',
       modele: parsed.modele || 'Inconnu',
-      annee: parsed.annee ? Number(parsed.annee) : undefined,
-      couleur: parsed.couleur || undefined,
-      prixEstime: parsed.prixEstime ? Number(parsed.prixEstime) : undefined,
-      confiance: typeof parsed.confiance === 'number' ? Math.max(0, Math.min(1, parsed.confiance)) : 0,
-      description: parsed.description || `Véhicule détecté : ${parsed.marque || ''} ${parsed.modele || ''}`,
-      etat: parsed.etat || undefined,
-      kilometrage: parsed.kilometrage ? Number(parsed.kilometrage) : undefined,
-      type: parsed.type || undefined,
-      categorie: parsed.categorie || undefined,
-      puissance: parsed.puissance ? Number(parsed.puissance) : undefined,
-      cylindre: parsed.cylindre ? Number(parsed.cylindre) : undefined
     };
 
     if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+
     res.json({ success: true, data });
   } catch (err) {
-    if (imagePath && fs.existsSync(imagePath)) { try { fs.unlinkSync(imagePath); } catch {} }
-
-    res.json({
-      success: true,
-      data: {
-        marque: 'Inconnu',
-        modele: 'Inconnu',
-        annee: undefined,
-        couleur: undefined,
-        prixEstime: undefined,
-        confiance: 0,
-        description: 'Modèle non identifié (erreur IA)'
-      }
-    });
+    if (imagePath && fs.existsSync(imagePath)) {
+      try { fs.unlinkSync(imagePath); } catch (e) {}
+    }
+    res.json({ success: true, data: { marque: 'Inconnu', modele: 'Inconnu', confiance: 0 } });
   }
 };
 
-// =========================== PANIER ===========================
+// --- PANIER ---
+
 const addToCart = async (req, res) => {
   try {
     const { vehiculeId, typeVehicule } = req.body;
@@ -403,8 +369,6 @@ const addToCart = async (req, res) => {
     }
 
     let vehicule;
-    const modelName = typeVehicule === 'voiture' ? 'Voiture' : 'Moto';
-    
     if (typeVehicule === 'voiture') {
       vehicule = await Voiture.findById(vehiculeId).populate('agence', 'nom status');
     } else if (typeVehicule === 'moto') {
@@ -413,10 +377,7 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Type de véhicule invalide' });
     }
 
-    if (!vehicule) {
-      return res.status(404).json({ success: false, message: 'Véhicule non trouvé' });
-    }
-
+    if (!vehicule) return res.status(404).json({ success: false, message: 'Véhicule non trouvé' });
     if (vehicule.agence?.status !== 'approved') {
       return res.status(403).json({ success: false, message: "L'agence n'est pas approuvée" });
     }
@@ -431,7 +392,7 @@ const addToCart = async (req, res) => {
 
     panier.items.push({
       vehiculeId: vehicule._id,
-      typeVehicule: modelName,
+      typeVehicule: typeVehicule === 'voiture' ? 'Voiture' : 'Moto',
       marque: vehicule.marque,
       modele: vehicule.modele,
       annee: vehicule.annee,
@@ -446,13 +407,7 @@ const addToCart = async (req, res) => {
     res.json({
       success: true,
       message: 'Véhicule ajouté au panier avec succès',
-      item: {
-        vehiculeId: vehicule._id,
-        marque: vehicule.marque,
-        modele: vehicule.modele,
-        prix: vehicule.prix,
-        type: typeVehicule
-      }
+      item: { vehiculeId: vehicule._id, marque: vehicule.marque, modele: vehicule.modele, prix: vehicule.prix }
     });
   } catch (err) {
     console.error('Erreur addToCart:', err);
@@ -481,7 +436,200 @@ const getCart = async (req, res) => {
   }
 };
 
-// =========================== EXPORT ===========================
+const removeFromCart = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const userId = req.user._id;
+
+    if (!itemId) {
+      return res.status(400).json({ success: false, message: 'itemId requis' });
+    }
+
+    const result = await Panier.updateOne(
+      { user: userId },
+      { $pull: { items: { _id: itemId } } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Article non trouvé dans le panier' });
+    }
+
+    res.json({ success: true, message: 'Véhicule retiré du panier avec succès' });
+  } catch (err) {
+    console.error('Erreur removeFromCart:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const clearCart = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    await Panier.updateOne({ user: userId }, { $set: { items: [] } });
+    res.json({ success: true, message: 'Panier vidé avec succès' });
+  } catch (err) {
+    console.error('Erreur clearCart:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// --- COMMANDES ET PAIEMENT ---
+
+const passerCommande = async (req, res) => {
+  try {
+    const { items, informationsClient, methodePaiement } = req.body;
+    const userId = req.user._id;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Aucun véhicule sélectionné' });
+    }
+
+    if (!informationsClient) {
+      return res.status(400).json({ success: false, message: 'Informations client requises' });
+    }
+
+    const commandeItems = [];
+
+    for (const item of items) {
+      let vehicule;
+      if (item.typeVehicule === 'voiture') {
+        vehicule = await Voiture.findById(item.vehiculeId).populate('agence', 'nom status typeAgence');
+      } else if (item.typeVehicule === 'moto') {
+        vehicule = await Moto.findById(item.vehiculeId).populate('agence', 'nom status typeAgence');
+      } else {
+        return res.status(400).json({ success: false, message: 'Type de véhicule invalide' });
+      }
+
+      if (!vehicule) {
+        return res.status(404).json({ success: false, message: `Véhicule ${item.vehiculeId} non trouvé` });
+      }
+
+      if (vehicule.agence?.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: `L'agence "${vehicule.agence?.nom || 'inconnue'}" n'est pas approuvée`
+        });
+      }
+
+      commandeItems.push({
+        vehiculeId: vehicule._id,
+        typeVehicule: item.typeVehicule,
+        marque: vehicule.marque,
+        modele: vehicule.modele,
+        annee: vehicule.annee,
+        prix: vehicule.prix || 0,
+        etat: vehicule.etat,
+        agenceNom: vehicule.agence?.nom || 'Agence inconnue'
+      });
+    }
+
+    const totalAmount = commandeItems.reduce((sum, item) => sum + (item.prix || 0), 0);
+    const numeroCommande = `CMD-${Date.now().toString().slice(-8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const commande = await Commande.create({
+      user: userId,
+      numeroCommande,
+      items: commandeItems,
+      total: totalAmount,
+      statut: 'en_attente',
+      informationsClient,
+      methodePaiement,
+      dateCommande: new Date()
+    });
+
+    // Paiement par carte avec Stripe en EURO (2 décimales)
+    if (methodePaiement === 'carte') {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalAmount * 100),     // *100 pour les centimes d'EURO
+        currency: 'eur',                           // Changé de 'tnd' à 'eur'
+        metadata: {
+          commandeId: commande._id.toString(),
+          numeroCommande,
+          userId: userId.toString()
+        },
+        receipt_email: informationsClient.email,
+        description: `Commande ${numeroCommande} - ${commandeItems.length} véhicule(s)`
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Intention de paiement créée',
+        clientSecret: paymentIntent.client_secret,
+        commande: {
+          numeroCommande: commande.numeroCommande,
+          total: commande.total,
+          methodePaiement: 'carte',
+          commandeId: commande._id
+        }
+      });
+    }
+
+    // Pour les autres méthodes (espece, virement), on vide le panier immédiatement
+    if (items.length === 1) {
+      await Panier.updateOne({ user: userId }, { $pull: { items: { vehiculeId: items[0].vehiculeId } } });
+    } else {
+      await Panier.updateOne({ user: userId }, { $set: { items: [] } });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Commande créée avec succès',
+      commande: {
+        numeroCommande: commande.numeroCommande,
+        total: commande.total,
+        methodePaiement,
+        statut: commande.statut
+      }
+    });
+
+  } catch (err) {
+    console.error('Erreur passerCommande:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const confirmerPaiement = async (req, res) => {
+  try {
+    const { paymentIntentId, commandeId } = req.body;
+    const userId = req.user._id;
+
+    // Vérifier le statut du payment intent
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({
+        success: false,
+        message: 'Le paiement n\'a pas été confirmé'
+      });
+    }
+
+    // Trouver la commande
+    const commande = await Commande.findOne({ _id: commandeId, user: userId });
+    if (!commande) {
+      return res.status(404).json({ success: false, message: 'Commande non trouvée' });
+    }
+
+    // Mettre à jour le statut de la commande
+    commande.statut = 'payee';
+    commande.paymentIntentId = paymentIntentId;
+    await commande.save();
+
+    // Vider le panier maintenant que le paiement est confirmé
+    await Panier.updateOne({ user: userId }, { $set: { items: [] } });
+
+    res.json({
+      success: true,
+      message: 'Paiement confirmé avec succès',
+      commande: {
+        numeroCommande: commande.numeroCommande,
+        statut: commande.statut
+      }
+    });
+  } catch (err) {
+    console.error('Erreur confirmerPaiement:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   createVoiture,
   updateVoiture,
@@ -498,5 +646,9 @@ module.exports = {
   suggestModels,
   suggestFromImage,
   addToCart,
-  getCart
+  getCart,
+  removeFromCart,
+  clearCart,
+  passerCommande,
+  confirmerPaiement
 };
