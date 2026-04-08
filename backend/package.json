@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "kill-port": "npx kill-port 5000"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -22,7 +24,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
-    "socket.io": "^4.7.5",
+    "socket.io": "^4.8.3",
     "stripe": "^22.0.0",
     "twig": "^1.15.5",
     "yup": "^1.4.0"

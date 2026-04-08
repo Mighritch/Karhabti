@@ -2,6 +2,7 @@ const Voiture = require('../models/Voiture');
 const Moto = require('../models/Moto');
 const Panier = require('../models/Panier');
 const Commande = require('../models/Commande');
+const Agence = require('../models/Agence');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -11,8 +12,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const timeoutPromise = (ms, msg = 'Timeout') =>
   new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
-
-// --- GESTION DES VOITURES ---
 
 const createVoiture = async (req, res) => {
   try {
@@ -114,8 +113,6 @@ const getMyVoitures = async (req, res) => {
   }
 };
 
-// --- GESTION DES MOTOS ---
-
 const createMoto = async (req, res) => {
   try {
     const images = req.files?.map(file => ({
@@ -199,8 +196,6 @@ const getMyMotos = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-// --- RECHERCHE ET STATS ---
 
 const getGlobalStats = async (req, res) => {
   try {
@@ -318,7 +313,7 @@ const suggestFromImage = async (req, res) => {
     const base64Image = fileData.toString('base64');
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       generationConfig: { responseMimeType: 'application/json' }
     });
 
@@ -356,8 +351,6 @@ const suggestFromImage = async (req, res) => {
     res.json({ success: true, data: { marque: 'Inconnu', modele: 'Inconnu', confiance: 0 } });
   }
 };
-
-// --- PANIER ---
 
 const addToCart = async (req, res) => {
   try {
@@ -472,32 +465,20 @@ const clearCart = async (req, res) => {
   }
 };
 
-// --- COMMANDES ET PAIEMENT ---
-
 const passerCommande = async (req, res) => {
   try {
     const { items, informationsClient, methodePaiement } = req.body;
     const userId = req.user._id;
+    const io = req.app.get('io');
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Aucun véhicule sélectionné' });
     }
 
-    if (!informationsClient) {
-      return res.status(400).json({ success: false, message: 'Informations client requises' });
-    }
-
     const commandeItems = [];
-
     for (const item of items) {
-      let vehicule;
-      if (item.typeVehicule === 'voiture') {
-        vehicule = await Voiture.findById(item.vehiculeId).populate('agence', 'nom status typeAgence');
-      } else if (item.typeVehicule === 'moto') {
-        vehicule = await Moto.findById(item.vehiculeId).populate('agence', 'nom status typeAgence');
-      } else {
-        return res.status(400).json({ success: false, message: 'Type de véhicule invalide' });
-      }
+      const VehiculeModel = item.typeVehicule === 'voiture' ? Voiture : Moto;
+      const vehicule = await VehiculeModel.findById(item.vehiculeId).populate('agence');
 
       if (!vehicule) {
         return res.status(404).json({ success: false, message: `Véhicule ${item.vehiculeId} non trouvé` });
@@ -518,7 +499,9 @@ const passerCommande = async (req, res) => {
         annee: vehicule.annee,
         prix: vehicule.prix || 0,
         etat: vehicule.etat,
-        agenceNom: vehicule.agence?.nom || 'Agence inconnue'
+        agenceNom: vehicule.agence?.nom || 'Agence inconnue',
+        agenceId: vehicule.agence?._id,
+        agentId: vehicule.agence?.agent
       });
     }
 
@@ -530,24 +513,46 @@ const passerCommande = async (req, res) => {
       numeroCommande,
       items: commandeItems,
       total: totalAmount,
-      statut: 'en_attente',
+      statut: methodePaiement === 'carte' ? 'en_attente_paiement' : 'en_attente',
       informationsClient,
       methodePaiement,
       dateCommande: new Date()
     });
 
-    // Paiement par carte avec Stripe en EURO (2 décimales)
+    commandeItems.forEach(item => {
+      if (item.agentId) {
+        io.to(`user:${item.agentId}`).emit('notification', {
+          type: 'nouvelle_commande',
+          commandeId: commande._id,
+          numeroCommande: commande.numeroCommande,
+          total: commande.total,
+          client: {
+            nom: `${informationsClient.prenom} ${informationsClient.nom}`,
+            telephone: informationsClient.telephone,
+            email: informationsClient.email
+          },
+          items: commandeItems.filter(ci => ci.agentId.toString() === item.agentId.toString()).map(i => ({
+            marque: i.marque,
+            modele: i.modele,
+            prix: i.prix,
+            etat: i.etat
+          })),
+          message: `Nouvelle commande #${commande.numeroCommande}`,
+          date: new Date()
+        });
+      }
+    });
+
     if (methodePaiement === 'carte') {
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),     // *100 pour les centimes d'EURO
-        currency: 'eur',                           // Changé de 'tnd' à 'eur'
+        amount: Math.round(totalAmount * 100),
+        currency: 'eur',
         metadata: {
           commandeId: commande._id.toString(),
           numeroCommande,
           userId: userId.toString()
         },
-        receipt_email: informationsClient.email,
-        description: `Commande ${numeroCommande} - ${commandeItems.length} véhicule(s)`
+        receipt_email: informationsClient.email
       });
 
       return res.status(200).json({
@@ -563,22 +568,12 @@ const passerCommande = async (req, res) => {
       });
     }
 
-    // Pour les autres méthodes (espece, virement), on vide le panier immédiatement
-    if (items.length === 1) {
-      await Panier.updateOne({ user: userId }, { $pull: { items: { vehiculeId: items[0].vehiculeId } } });
-    } else {
-      await Panier.updateOne({ user: userId }, { $set: { items: [] } });
-    }
+    await Panier.updateOne({ user: userId }, { $set: { items: [] } });
 
     res.status(201).json({
       success: true,
       message: 'Commande créée avec succès',
-      commande: {
-        numeroCommande: commande.numeroCommande,
-        total: commande.total,
-        methodePaiement,
-        statut: commande.statut
-      }
+      commande
     });
 
   } catch (err) {
@@ -592,7 +587,6 @@ const confirmerPaiement = async (req, res) => {
     const { paymentIntentId, commandeId } = req.body;
     const userId = req.user._id;
 
-    // Vérifier le statut du payment intent
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== 'succeeded') {
@@ -602,18 +596,15 @@ const confirmerPaiement = async (req, res) => {
       });
     }
 
-    // Trouver la commande
     const commande = await Commande.findOne({ _id: commandeId, user: userId });
     if (!commande) {
       return res.status(404).json({ success: false, message: 'Commande non trouvée' });
     }
 
-    // Mettre à jour le statut de la commande
     commande.statut = 'payee';
     commande.paymentIntentId = paymentIntentId;
     await commande.save();
 
-    // Vider le panier maintenant que le paiement est confirmé
     await Panier.updateOne({ user: userId }, { $set: { items: [] } });
 
     res.json({
